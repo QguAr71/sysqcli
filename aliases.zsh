@@ -78,7 +78,7 @@ clean() {
     sudo paccache -rk 1
     sudo journalctl --vacuum-time=1d
     sync
-    echo "✨ System lśni!"
+    echo "\uf0d0 System lśni!"
 }
 
 # Turbo / Eco

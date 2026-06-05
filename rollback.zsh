@@ -24,7 +24,7 @@ q_restore_last() {
     local last=$(ls -t "$ROLLBACK_DIR"/*.tar.gz 2>/dev/null | head -1)
     [[ -z "$last" ]] && { echo " Brak snapshotów."; return 1; }
     tar -xzf "$last" -C "$HOME/"
-    echo "♻️ Przywrócono: $(basename $last)"
+    echo "\uf1b8 Przywrócono: $(basename $last)"
 }
 
 # --- LIST (snapshoty) ---
