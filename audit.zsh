@@ -68,23 +68,36 @@ preexec() {
     [[ "$SYSCLI_MODE" != "full" ]] && return
     [[ "$SYSCLI_PROFILE" != "laptop" ]] && return
 
-    local temp=$(sensors 2>/dev/null | grep -m1 -E 'Package id 0|Core 0|edge|temp1' | awk '{print ($4=="" ? $2 : $4)}' | tr -d '+°C')
+    # --- CPU ---
+    local temp=$(sensors 2>/dev/null | grep -m1 -E 'Package id 0|Core 0|edge|temp1' | awk '{v=($4==""?$2:$4); gsub(/[^0-9.]/, "", v); print v}')
     [[ -z "$temp" ]] && return
 
     local t_val=${temp%.*}
-    # THROTTLE: >83°C
-    if [[ $t_val -gt 83 && "$SYSCLI_THROTTLED" != "1" ]]; then
+    [[ "$t_val" =~ ^[0-9]+$ ]] || return
+
+    # THROTTLE: >78°C
+    if [[ $t_val -gt 78 && "$SYSCLI_THROTTLED" != "1" ]]; then
         sudo -n cpupower frequency-set -g powersave >/dev/null 2>&1
         export SYSCLI_THROTTLED=1
-        echo -e "\e[31m[🔥 THERMAL] Throttle ON — ${t_val}°C → powersave\e[0m"
+        echo -e "\e[31m[🔥 CPU] Throttle ON — ${t_val}°C → powersave\e[0m"
     # RECOVER: <65°C
     elif [[ $t_val -lt 65 && "$SYSCLI_THROTTLED" == "1" ]]; then
         sudo -n cpupower frequency-set -g performance >/dev/null 2>&1
         export SYSCLI_THROTTLED=0
-        echo -e "\e[32m[❄️ THERMAL] Performance restored — ${t_val}°C\e[0m"
-    # ALERT: 78-83°C
-    elif [[ $t_val -gt 78 ]]; then
-        echo -e "\e[33m[⚠️ THERMAL] ${t_val}°C — wysokie obciążenie\e[0m"
+        echo -e "\e[32m[❄️ CPU] Performance restored — ${t_val}°C\e[0m"
+    # ALERT: 73-78°C
+    elif [[ $t_val -gt 73 ]]; then
+        echo -e "\e[33m[⚠️ CPU] ${t_val}°C — wysokie obciążenie\e[0m"
+    fi
+
+    # --- GPU ---
+    if command -v nvidia-smi &>/dev/null; then
+        local gpu_temp=$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader 2>/dev/null)
+        if [[ "$gpu_temp" =~ ^[0-9]+$ && $gpu_temp -gt 75 ]]; then
+            echo -e "\e[31m[🔥 GPU] ${gpu_temp}°C — throttling może wystąpić\e[0m"
+        elif [[ "$gpu_temp" =~ ^[0-9]+$ && $gpu_temp -gt 68 ]]; then
+            echo -e "\e[33m[⚠️ GPU] ${gpu_temp}°C — podwyższona temperatura\e[0m"
+        fi
     fi
 }
 
