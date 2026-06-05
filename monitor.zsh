@@ -10,30 +10,30 @@ fkill() {
     if [[ -n "$pid" ]]; then
         echo -ne "\e[1;31mKill PID $pid? (y/n): \e[0m"
         read -k 1 res; echo ""
-        [[ "$res" == "y" ]] && kill -9 "$pid" 2>/dev/null && echo "✅ Terminated." || echo "Anulowano."
+        [[ "$res" == "y" ]] && kill -9 "$pid" 2>/dev/null && echo " Terminated." || echo "Anulowano."
     fi
 }
 
 # --- qhealth: Szybka diagnostyka ---
 qhealth() {
     echo -e "\e[1;35m◢◤ SysQCLI HEALTH CHECK ◢◤\e[0m"
-    echo -ne "🌡️  CPU: "
+    echo -ne "  CPU: "
     sensors 2>/dev/null | grep -m1 -E 'Package id 0|edge|Core 0' | awk '{print $4}'
-    echo -ne "📊 RAM: "
+    echo -ne " RAM: "
     free -h | awk '/^Mem:/ {print $3 "/" $2 " (" int($3/$2*100) "%)"}'
-    echo -ne "💾 Dysk: "
+    echo -ne " Dysk: "
     df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}'
-    echo -ne "📦 Aktualizacje: "
+    echo -ne " Aktualizacje: "
     checkupdates 2>/dev/null | wc -l | tr -d '\n'; echo " pakietów"
-    echo -ne "💥 Coredumpy (24h): "
+    echo -ne "\uf188 Coredumpy (24h): "
     coredumpctl list --since "yesterday" --no-legend 2>/dev/null | wc -l | tr -d '\n'; echo " awarii"
-    echo -ne "⏱️  Uptime: "
+    echo -ne "  Uptime: "
     uptime -p | sed 's/up //'
-    echo -ne "⚡ Governor: "
+    echo -ne " Governor: "
     cpupower frequency-info 2>/dev/null | grep "governor" | head -1 | awk -F'"' '{print $2}'
 }
 
 # --- qtop, qgpu, qtemp: monitoring ---
 alias qtop='btop'
 alias qtemp='watch -n2 sensors'
-qgpu() { nvidia-smi -q -d TEMPERATURE,UTILIZATION,MEMORY 2>/dev/null || echo "❌ nvidia-smi niedostępne"; }
+qgpu() { nvidia-smi -q -d TEMPERATURE,UTILIZATION,MEMORY 2>/dev/null || echo " nvidia-smi niedostępne"; }

@@ -9,7 +9,7 @@ mkdir -p "$AI_CACHE"
 
 # --- AI: pomocnicze ---
 _ai_ready() {
-    command -v ollama &>/dev/null || { echo "❌ Ollama nie jest zainstalowana. Wpisz 'qinstall'."; return 1; }
+    command -v ollama &>/dev/null || { echo " Ollama nie jest zainstalowana. Wpisz 'qinstall'."; return 1; }
     return 0
 }
 
@@ -45,30 +45,30 @@ ai() {
 
     _ai_cache_valid "$f" && { cat "$f"; return; }
 
-    echo -e "\e[34m[🧠 AI: $PROFILE]\e[0m"
+    echo -e "\e[34m[ AI: $PROFILE]\e[0m"
     ollama run "$PROFILE" "INSTRUKCJA: Odpowiadaj wyłącznie po polsku. $q" | tee "$f"
 }
 
 # --- Fix: AI diagnoza journalctl ---
 fix() {
     _ai_ready || return 1
-    echo -e "\e[33m[🔍 SysQCLI SCAN] Analizuję logi...\e[0m"
+    echo -e "\e[33m[ SysQCLI SCAN] Analizuję logi...\e[0m"
     local logs=$(journalctl -p 3 -xb -n 15 --no-pager 2>/dev/null)
-    [[ -z "$logs" ]] && { echo "✅ Logi czyste."; return 0; }
+    [[ -z "$logs" ]] && { echo " Logi czyste."; return 0; }
     echo -e "BŁĘDY:\n$logs" | ai "Zaproponuj rozwiązanie dla Arch Linux:"
 }
 
 # --- Summary: AI podsumowanie dnia ---
 summary() {
     _ai_ready || return 1
-    echo -e "\e[34m[🧠 AI analizuje Twój dzień...]\e[0m"
+    echo -e "\e[34m[ AI analizuje Twój dzień...]\e[0m"
     local hist=$(atuin history list --limit 50 2>/dev/null || fc -ln -50)
     echo -e "MOJA HISTORIA:\n$hist" | ai "Podsumuj krótko co robiłem i zasugeruj jeden przydatny alias."
 }
 
 # --- Command not found handler ---
 command_not_found_handler() {
-    echo -e "\e[31m[❌] Polecenie '$1' nie istnieje.\e[0m"
+    echo -e "\e[31m[] Polecenie '$1' nie istnieje.\e[0m"
     _ai_ready && ai "Użytkownik wpisał '$1' które nie istnieje. Podaj krótką sugestię naprawy." 2>/dev/null
     return 127
 }

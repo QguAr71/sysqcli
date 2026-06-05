@@ -15,7 +15,7 @@ qsign() {
         sha256sum "$f" > "$sig"
         ((count++))
     done
-    echo "🔐 Podpisano $count plików (bez init.zsh)"
+    echo " Podpisano $count plików (bez init.zsh)"
 }
 
 # --- VERIFY: sprawdź integralność ---
@@ -25,9 +25,9 @@ qverify() {
         [[ "$(basename "$f")" == "init.zsh" ]] && continue
         [[ ! -f "$SIGDIR/$(basename "$f").sig" ]] && continue
         sha256sum -c "$SIGDIR/$(basename "$f").sig" --status 2>/dev/null || {
-            echo "❌ NARUSZENIE: $(basename "$f")"
+            echo " NARUSZENIE: $(basename "$f")"
             st=1
         }
     done
-    [[ $st -eq 0 ]] && echo "✅ Integralność OK" || return 1
+    [[ $st -eq 0 ]] && echo " Integralność OK" || return 1
 }

@@ -34,11 +34,11 @@ alias -g NE='2>/dev/null'
 # ═══════════════════════════════════════════════════════════════
 # TRYBY
 # ═══════════════════════════════════════════════════════════════
-qsafe()      { touch "$HOME/.sysqcli_safe" && echo "🧪 Safe mode — restart ZSH aby aktywować" && exec zsh }
-qunsafe()    { rm -f "$HOME/.sysqcli_safe" && echo "🚀 Full mode — restart ZSH aby aktywować" && exec zsh }
+qsafe()      { touch "$HOME/.sysqcli_safe" && echo "\uf0c3 Safe mode — restart ZSH aby aktywować" && exec zsh }
+qunsafe()    { rm -f "$HOME/.sysqcli_safe" && echo " Full mode — restart ZSH aby aktywować" && exec zsh }
 qimmutable() { SYSCLI_MODE=immutable exec zsh }
 qfull()      { SYSCLI_MODE=full exec zsh }
-szs()        { source "$SYSCLI_ROOT/init.zsh" && clear && echo "🚀 SysQCLI przeładowany." }
+szs()        { source "$SYSCLI_ROOT/init.zsh" && clear && echo " SysQCLI przeładowany." }
 
 # ═══════════════════════════════════════════════════════════════
 # SYSTEM
@@ -47,26 +47,26 @@ szs()        { source "$SYSCLI_ROOT/init.zsh" && clear && echo "🚀 SysQCLI prz
 up() {
     clear
     echo -e "\e[1;36m┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\e[0m"
-    echo -e "\e[1;36m┃ 🚀 SysQCLI v$SYSCLI_VERSION — SUPER UPDATE                      ┃\e[0m"
+    echo -e "\e[1;36m┃  SysQCLI v$SYSCLI_VERSION — SUPER UPDATE                      ┃\e[0m"
     echo -e "\e[1;36m┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛\e[0m"
-    echo -e "\n\e[1;32m📦 [1/4] Aktualizacja systemu (Pacman)...\e[0m"
+    echo -e "\n\e[1;32m [1/4] Aktualizacja systemu (Pacman)...\e[0m"
     sudo pacman -Syu
-    command -v yay &>/dev/null && { echo -e "\n\e[1;33m📦 AUR (Yay)...\e[0m"; yay -Sua; }
+    command -v yay &>/dev/null && { echo -e "\n\e[1;33m AUR (Yay)...\e[0m"; yay -Sua; }
 
-    echo -e "\n\e[1;33m🧹 [2/4] Czyszczenie...\e[0m"
+    echo -e "\n\e[1;33m [2/4] Czyszczenie...\e[0m"
     sudo pacman -Rns $(pacman -Qtdq) 2>/dev/null || echo "Brak sierot."
     sudo paccache -rk 1 2>/dev/null && sync
 
-    echo -e "\n\e[1;34m🧠 [3/4] Aktualizacja modeli AI (Ollama)...\e[0m"
+    echo -e "\n\e[1;34m [3/4] Aktualizacja modeli AI (Ollama)...\e[0m"
     command -v ollama &>/dev/null && for m in qwen2.5:7b qwen2.5:14b deepseek-coder-v2:16b; do
         echo "→ Pull $m..."
         ollama pull "$m" 2>/dev/null
     done
 
-    echo -e "\n\e[1;35m⚡ [4/4] Rekompilacja Zsh...\e[0m"
+    echo -e "\n\e[1;35m [4/4] Rekompilacja Zsh...\e[0m"
     zcompile "$SYSCLI_ROOT"/*.zsh 2>/dev/null
 
-    echo -e "\e[1;32m✅ System lśni, $USER.\e[0m"
+    echo -e "\e[1;32m System lśni, $USER.\e[0m"
 }
 
 # Tylko aktualizacja pacman (bez AI, bez sprzątania)
@@ -74,7 +74,7 @@ qupdate() { sudo pacman -Syu }
 
 # Clean
 clean() {
-    echo "🧹 Sprzątanie..."
+    echo " Sprzątanie..."
     sudo paccache -rk 1
     sudo journalctl --vacuum-time=1d
     sync
@@ -82,8 +82,8 @@ clean() {
 }
 
 # Turbo / Eco
-turbo() { sudo cpupower frequency-set -g performance && echo "🔥 TURBO" }
-eco()   { sudo cpupower frequency-set -g powersave   && echo "❄️ ECO" }
+turbo() { sudo cpupower frequency-set -g performance && echo " TURBO" }
+eco()   { sudo cpupower frequency-set -g powersave   && echo " ECO" }
 ports() { sudo lsof -i -P -n | grep LISTEN }
 
 # ═══════════════════════════════════════════════════════════════
@@ -98,7 +98,7 @@ ex() {
             *.zip)     unzip "$1"    ;; *.7z)      7z x "$1"    ;;
             *) echo "ex: nieznany format" && return 1 ;;
         esac
-        echo -e "\e[32m[📂] Wypakowano. Usunąć archiwum? (y/n)\e[0m"
+        echo -e "\e[32m[\uf07b] Wypakowano. Usunąć archiwum? (y/n)\e[0m"
         read -k 1 res
         [[ "$res" == "y" ]] && rm -v "$1"
     fi
@@ -117,7 +117,7 @@ github() { xdg-open "https://github.com/search?q=$*" &>/dev/null }
 # skoki zoxide
 zi() {
     local dir
-    dir=$(zoxide query -l 2>/dev/null | fzf --height 50% --layout=reverse --header="📂 SysQCLI NAV" --preview='lsd --tree --depth 2 --color=always {} 2>/dev/null')
+    dir=$(zoxide query -l 2>/dev/null | fzf --height 50% --layout=reverse --header="\uf07b SysQCLI NAV" --preview='lsd --tree --depth 2 --color=always {} 2>/dev/null')
     [[ -n "$dir" ]] && cd "$dir"
 }
 
@@ -125,12 +125,12 @@ zi() {
 fn() {
     local line
     line=$(rg --column --line-number --no-heading --color=always --smart-case --glob '!.git/*' "$1" 2>/dev/null | \
-        fzf --ansi --height 90% --layout=reverse --header="🔍 SysQCLI SEARCH" --preview 'bat --style=numbers --color=always --highlight-line {2} {1} 2>/dev/null')
+        fzf --ansi --height 90% --layout=reverse --header=" SysQCLI SEARCH" --preview 'bat --style=numbers --color=always --highlight-line {2} {1} 2>/dev/null')
     [[ -n "$line" ]] && micro "+$(echo "$line" | cut -d: -f2)" "$(echo "$line" | cut -d: -f1)"
 }
 
 # przeglądaj pliki
-alias fp='fzf --height 90% --layout=reverse --header="📄 SysQCLI FILES" \
+alias fp='fzf --height 90% --layout=reverse --header="\uf15b SysQCLI FILES" \
     --preview "bat --style=numbers --color=always --line-range :500 {} 2>/dev/null || cat {} 2>/dev/null" \
     --bind "enter:execute(micro {})+accept"'
 

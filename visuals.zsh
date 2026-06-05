@@ -29,14 +29,14 @@ sysqcli_motd() {
 
     # Coredumps
     local cores=$(coredumpctl list --since "yesterday" --no-legend 2>/dev/null | wc -l)
-    [[ $cores -gt 0 ]] && echo -e "\e[33m⚠️ $cores awarii od wczoraj — wpisz 'fix'\e[0m"
+    [[ $cores -gt 0 ]] && echo -e "\e[33m $cores awarii od wczoraj — wpisz 'fix'\e[0m"
 
     # RAM warning at start
     local mem_used=$(free | awk '/^Mem:/ {print $3}')
     local mem_total=$(free | awk '/^Mem:/ {print $2}')
     if [[ -n "$mem_used" && -n "$mem_total" ]]; then
         local usage=$(( mem_used * 100 / mem_total ))
-        [[ $usage -gt 90 ]] && echo -e "\e[31m⚠️ RAM: ${usage}% — rozważ zamknięcie aplikacji\e[0m"
+        [[ $usage -gt 90 ]] && echo -e "\e[31m RAM: ${usage}% — rozważ zamknięcie aplikacji\e[0m"
     fi
 
     echo ""

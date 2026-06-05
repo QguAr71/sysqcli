@@ -17,7 +17,7 @@ qcheck_deps() {
     command -v grc       &>/dev/null || missing+=("grc")
 
     [[ ${#missing[@]} -gt 0 ]] && {
-        echo -e "\e[33m⚠️ SysQCLI: brakuje: ${missing[*]}\e[0m"
+        echo -e "\e[33m SysQCLI: brakuje: ${missing[*]}\e[0m"
         echo -e "\e[33m   Wpisz \e[1m'qinstall'\e[0m\e[33m aby zainstalować.\e[0m"
     }
 }
@@ -41,7 +41,7 @@ qinstall() {
     [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] || aur_pkgs+=("zsh-autosuggestions")
 
     [[ ${#pacman_pkgs[@]} -gt 0 ]] && sudo pacman -S --needed "${pacman_pkgs[@]}"
-    [[ ${#aur_pkgs[@]} -gt 0 ]] && echo -e "\e[36m📦 AUR (zainstaluj ręcznie): ${aur_pkgs[*]}\e[0m"
+    [[ ${#aur_pkgs[@]} -gt 0 ]] && echo -e "\e[36m AUR (zainstaluj ręcznie): ${aur_pkgs[*]}\e[0m"
 
-    echo -e "\e[32m✅ qinstall zakończone.\e[0m"
+    echo -e "\e[32m qinstall zakończone.\e[0m"
 }

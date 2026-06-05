@@ -48,7 +48,7 @@ _qdetect_mode
 if [[ "$SYSCLI_MODE" == "safe" ]]; then
     source "$SYSCLI_ROOT/audit.zsh"
     source "$SYSCLI_ROOT/aliases.zsh"
-    echo -e "\e[1;33m🧪 SysQCLI v$SYSCLI_VERSION | SAFE MODE | profil: $SYSCLI_PROFILE | Tylko minimum\e[0m"
+    echo -e "\e[1;33m\uf0c3 SysQCLI v$SYSCLI_VERSION | SAFE MODE | profil: $SYSCLI_PROFILE | Tylko minimum\e[0m"
     return 0
 fi
 
@@ -58,7 +58,7 @@ if [[ "$SYSCLI_MODE" == "immutable" ]]; then
     source "$SYSCLI_ROOT/aliases.zsh"
     qverify || true
     chattr +i "$SYSCLI_ROOT"/*.zsh 2>/dev/null
-    echo -e "\e[1;31m🔒 SysQCLI v$SYSCLI_VERSION | IMMUTABLE MODE | Pliki zablokowane (chattr +i)\e[0m"
+    echo -e "\e[1;31m SysQCLI v$SYSCLI_VERSION | IMMUTABLE MODE | Pliki zablokowane (chattr +i)\e[0m"
     return 0
 fi
 
@@ -71,4 +71,4 @@ source "$SYSCLI_ROOT/audit.zsh"
 source "$SYSCLI_ROOT/aliases.zsh"
 [[ -z "$SYSCLI_NO_FUN" ]]      && source "$SYSCLI_ROOT/fun.zsh"
 
-echo -e "\e[1;34m⚡ SysQCLI v$SYSCLI_VERSION | FULL MODE | profil: $SYSCLI_PROFILE | Power: $SYSCLI_POWER\e[0m"
+echo -e "\e[1;34m SysQCLI v$SYSCLI_VERSION | FULL MODE | profil: $SYSCLI_PROFILE | Power: $SYSCLI_POWER\e[0m"
