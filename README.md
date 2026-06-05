@@ -1,5 +1,11 @@
 # SysQCLI v1.0
 
+[![Version](https://img.shields.io/badge/version-1.0-blue)](https://github.com/QguAr71/sysqcli/releases)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Platform](https://img.shields.io/badge/platform-Arch_Linux-1793d1?logo=archlinux)](https://archlinux.org)
+[![Made with](https://img.shields.io/badge/made_with-ZSH-ff69b4)](https://zsh.org)
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/QguAr71/sysqcli/actions)
+
 **Modularna platforma konfiguracyjna ZSH z mechanizmami bezpieczeństwa.**
 
 Rollback snapshotów, integralność SHA256, trzy tryby pracy, termiczny autopilot, integracja z AI (Ollama) i monitoring HUD. Stworzona dla Arch Linux z myślą o wielodystrybucyjności w v2.
@@ -7,7 +13,7 @@ Rollback snapshotów, integralność SHA256, trzy tryby pracy, termiczny autopil
 ## Instalacja
 
 ```bash
-git clone https://github.com/SysQ-dev/sysqcli.git ~/.config/sysqcli
+git clone https://github.com/QguAr71/sysqcli.git ~/.config/sysqcli
 echo 'export SYSCLI_ROOT="$HOME/.config/sysqcli"' >> ~/.zshrc
 echo 'source "$SYSCLI_ROOT/init.zsh"' >> ~/.zshrc
 exec zsh
@@ -100,7 +106,7 @@ exec zsh
 
 ## Autor
 
-**SysQ** — https://github.com/SysQ-dev
+**SysQ** — https://github.com/QguAr71
 
 ## Licencja
 

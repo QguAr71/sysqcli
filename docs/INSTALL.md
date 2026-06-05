@@ -3,7 +3,7 @@
 ## Szybka
 
 ```bash
-git clone https://github.com/SysQ-dev/sysqcli.git ~/.config/sysqcli
+git clone https://github.com/QguAr71/sysqcli.git ~/.config/sysqcli
 echo 'export SYSCLI_ROOT="$HOME/.config/sysqcli"' >> ~/.zshrc
 echo 'source "$SYSCLI_ROOT/init.zsh"' >> ~/.zshrc
 exec zsh
@@ -35,7 +35,7 @@ sudo pacman -S --needed ollama grc cpupower
 yay -S zinit-git zsh-autosuggestions
 
 # 3. Sklonuj
-git clone https://github.com/SysQ-dev/sysqcli.git ~/.config/sysqcli
+git clone https://github.com/QguAr71/sysqcli.git ~/.config/sysqcli
 
 # 4. Podepnij do .zshrc
 echo 'export SYSCLI_ROOT="$HOME/.config/sysqcli"' >> ~/.zshrc
