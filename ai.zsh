@@ -68,8 +68,8 @@ summary() {
 
 # --- Command not found handler ---
 command_not_found_handler() {
-    echo -e "\e[31m[❌] Ksysqclida '$1' nie istnieje.\e[0m"
-    _ai_ready && ai "Użytkownik wpisał ksysqclidę '$1', która nie istnieje. Podaj krótką sugestię naprawy." 2>/dev/null
+    echo -e "\e[31m[❌] Polecenie '$1' nie istnieje.\e[0m"
+    _ai_ready && ai "Użytkownik wpisał '$1' które nie istnieje. Podaj krótką sugestię naprawy." 2>/dev/null
     return 127
 }
 
