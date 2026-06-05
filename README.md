@@ -76,8 +76,8 @@ exec zsh
 | `up` | Super update: pacman + AUR + AI modele + clean |
 | `clean` | paccache + journalctl vacuum |
 | `turbo` / `eco` | Przełącz governor CPU |
+| `qtop` | btop (monitoring systemu) |
 | `qhealth` | Diagnostyka: temp, RAM, dysk, coredumpy, uptime |
-| `hud` | Live monitor (paski CPU/RAM, temp, MHz) |
 | `fkill` | Zabij proces przez FZF |
 | `qinstall` | Zainstaluj brakujące zależności |
 

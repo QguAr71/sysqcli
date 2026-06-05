@@ -106,7 +106,6 @@ Funkcje:
 ## monitor.zsh
 **Monitoring.**
 
-- `hud` — Live HUD: temperatura, paski CPU/RAM, częstotliwości core'ów. Fallback temperatury do ACPI thermal zones.
 - `fkill` — Process terminator przez FZF
 - `qhealth` — Raport diagnostyczny: temp, RAM, dysk, aktualizacje, coredumpy, uptime, governor
 - `qtop` — btop

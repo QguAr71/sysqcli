@@ -25,7 +25,7 @@ sysqcli() {
     echo -e "  \e[1;32mturbo / eco\e[0m    - Ręczne przełączanie profilu CPU"
     echo -e "  \e[1;32mqhealth\e[0m        - Diagnostyka: temp, RAM, dysk, coredumpy"
     echo -e "  \e[1;32mqtop\e[0m           - btop (monitoring systemu)"
-    echo -e "  \e[1;32mhud\e[0m            - SysQCLI HUD na żywo (temp, CPU, RAM)"
+    echo -e "  \e[1;32mqtop\e[0m           - btop (monitoring systemu)"
     echo -e "  \e[1;32mqinstall\e[0m       - Zainstaluj brakujące zależności"
     echo -e "\n\e[1;34m📂 NAWIGACJA:\e[0m"
     echo -e "  \e[1;32mzi\e[0m             - Skoki Zoxide + FZF"
