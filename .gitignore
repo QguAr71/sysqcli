@@ -1,0 +1,9 @@
+# SysQCLI — ignorowane ścieżki
+
+# Sygnatury i snapshoty (generowane lokalnie)
+.sigs/
+.rollback/
+
+# Cache
+*.zwc
+*.zwc.old
