@@ -75,6 +75,9 @@ Detailed module docs: [docs/MODULES.md](docs/MODULES.md)
 | `qsnaps` | List available snapshots |
 | `qsafe` / `qunsafe` | Toggle safe mode |
 | `qimmutable` / `qfull` | Toggle immutable / full mode |
+| `guard-log` | Show guard history (blocked/allowed commands) |
+
+> **Security Guard:** Blocks `rm -rf /`, `mkfs`, `dd`, fork bombs and other dangerous commands. In immutable mode, blocks sudo/pacman/rm/dd entirely.
 
 ### AI (Ollama)
 | Command | Profile |

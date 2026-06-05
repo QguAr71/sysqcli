@@ -1,21 +1,68 @@
 #!/usr/bin/env zsh
 # ===============================================================
-# SysQCLI Config v1.0 — AUDIT (Unified preexec + precmd)
-# Audyt ksysqclid + thermal autopilot + powiadomienia >10s
+# SysQCLI v1.1 — AUDIT & GUARD (Unified preexec + precmd)
+# Audyt komend + thermal autopilot + powiadomienia >10s
+# v1.1: Security Guard — blokada niebezpiecznych komend
 # ===============================================================
 
 AUDIT_LOG="$HOME/.cache/sysqcli_audit.log"
+GUARD_LOG="$HOME/.cache/sysqcli_guard.log"
 mkdir -p "$(dirname "$AUDIT_LOG")"
 zmodload zsh/datetime 2>/dev/null || true
 
-# --- PREEXEC: audyt + thermal autopilot ---
+# --- SECURITY GUARD: niebezpieczne wzorce ---
+typeset -gA SYSCLI_DANGEROUS=(
+  "rm -rf /"               "usuwa cały system"
+  "rm -rf ~"               "usuwa cały katalog domowy"
+  "sudo rm -rf"            "sudo usuwa wszystko"
+  "> /dev/"                "nadpisuje urządzenie blokowe"
+  "mkfs"                   "formatuje dysk"
+  "dd if="                 "niszczy dane przy złym of="
+  ":(){ :|: & };"          "fork bomb — zawiesza system"
+  "chmod -R 777 /"         "nadpisuje uprawnienia systemowe"
+  "sudo pacman -Rsc"       "usuwa pakiety z zależnościami (kaskada)"
+)
+
+# --- PREEXEC: audyt + thermal autopilot + security guard ---
 preexec() {
-    # Audyt — loguj każdą ksysqclidę z timestampem
-    echo "$(date '+%F %T') | $PWD | $1" >> "$AUDIT_LOG"
+    local cmd="$1"
+
+    # === GUARD: immutable — twarda blokada ===
+    if [[ "$SYSCLI_MODE" == "immutable" ]]; then
+        if [[ $cmd == *sudo* || $cmd == *pacman*-S* || $cmd == *yay*-S* || \
+              $cmd == *rm* || $cmd == *dd* || $cmd == *mkfs* || \
+              $cmd == *chattr* ]]; then
+            echo -e "\e[1;31m🔒 GUARD (immutable): Komenda zablokowana!\e[0m $cmd"
+            echo "[$(date '+%F %T')] BLOCKED immutable: $cmd" >> "$GUARD_LOG"
+            return 1
+        fi
+    fi
+
+    # === GUARD: ostrzeżenie + potwierdzenie ===
+    for pat in "${(@k)SYSCLI_DANGEROUS}"; do
+        if [[ $cmd == *${pat}* ]]; then
+            echo -e "\e[1;33m⚠️  GUARD: Niebezpieczna komenda!\e[0m"
+            echo -e "   ${cmd}"
+            echo -e "   Powód: ${SYSCLI_DANGEROUS[$pat]}"
+            echo -ne "   Wykonać? [y/N] "
+            read -r confirm </dev/tty
+            if [[ ! $confirm =~ ^[yY]$ ]]; then
+                echo -e "\e[32mAnulowano.\e[0m"
+                echo "[$(date '+%F %T')] DENIED: $cmd" >> "$GUARD_LOG"
+                return 1
+            fi
+            echo -e "\e[33mWykonano po potwierdzeniu.\e[0m"
+            echo "[$(date '+%F %T')] ALLOWED: $cmd" >> "$GUARD_LOG"
+            break
+        fi
+    done
+
+    # Audyt — loguj każdą komendę z timestampem
+    echo "$(date '+%F %T') | $PWD | $cmd" >> "$AUDIT_LOG"
 
     # Timing
     SYSCLI_CMD_START=$EPOCHSECONDS
-    SYSCLI_LAST_CMD=$1
+    SYSCLI_LAST_CMD=$cmd
 
     # Thermal autopilot (tylko full mode + laptop)
     [[ "$SYSCLI_MODE" != "full" ]] && return
@@ -41,15 +88,18 @@ preexec() {
     fi
 }
 
-# --- PRECMD: powiadomienia dla długich ksysqclid ---
+# --- PRECMD: powiadomienia dla długich komend ---
 precmd() {
     if (( SYSCLI_CMD_START )); then
         local duration=$(( EPOCHSECONDS - SYSCLI_CMD_START ))
         if (( duration > 10 )); then
             command -v notify-send &>/dev/null && \
-                notify-send "🚀 SysQCLI: Zadanie zakończone" "Ksysqclida: $SYSCLI_LAST_CMD\nCzas: ${duration}s" --icon=utilities-terminal 2>/dev/null
+                notify-send "🚀 SysQCLI: Zadanie zakończone" "Komenda: $SYSCLI_LAST_CMD\nCzas: ${duration}s" --icon=utilities-terminal 2>/dev/null
             echo -e "\e[32m[🔔] Proces trwał ${duration}s — $(echo "$SYSCLI_LAST_CMD" | cut -c1-60)\e[0m"
         fi
         unset SYSCLI_CMD_START
     fi
 }
+
+# Alias
+alias guard-log='tail -n 30 "$GUARD_LOG" 2>/dev/null || echo "Brak wpisów"'
