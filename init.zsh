@@ -38,6 +38,7 @@ source "$SYSCLI_ROOT/help.zsh"
 # === DETEKCJA TRYBU ===
 _qdetect_mode() {
     [[ -f "$HOME/.sysqcli_safe" ]] && { export SYSCLI_MODE="safe"; return; }
+    [[ "$SYSCLI_MODE" == "safe" ]]      && { return; }
     [[ "$SYSCLI_MODE" == "immutable" ]] && { return; }
     export SYSCLI_MODE="full"
 }

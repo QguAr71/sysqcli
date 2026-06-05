@@ -20,14 +20,14 @@ qsign() {
 
 # --- VERIFY: sprawdź integralność ---
 qverify() {
-    local status=0
+    local st=0
     for f in "$SYSCLI_ROOT"/*.zsh; do
         [[ "$(basename "$f")" == "init.zsh" ]] && continue
         [[ ! -f "$SIGDIR/$(basename "$f").sig" ]] && continue
         sha256sum -c "$SIGDIR/$(basename "$f").sig" --status 2>/dev/null || {
             echo "❌ NARUSZENIE: $(basename "$f")"
-            status=1
+            st=1
         }
     done
-    [[ $status -eq 0 ]] && echo "✅ Integralność OK" || return 1
+    [[ $st -eq 0 ]] && echo "✅ Integralność OK" || return 1
 }
