@@ -5,7 +5,7 @@
 
 sysqcli() {
     clear
-    echo -e "\e[1;35m          SysQCLI v$SYSCLI_VERSION — SYSTEM DOWODZENIA \e[0m"
+    echo -e "\e[1;35m         ═══ SysQCLI v$SYSCLI_VERSION — SYSTEM DOWODZENIA ═══\e[0m"
     echo -e "\e[1;33mUżytkownik: $USER | Profil: $SYSCLI_PROFILE | Tryb: $SYSCLI_MODE | PM: $SYSCLI_PM\e[0m"
     echo -e "─────────────────────────────────────────────────────────────"
     echo -e "\e[1;34m AI & DIAGNOSTYKA:\e[0m"
