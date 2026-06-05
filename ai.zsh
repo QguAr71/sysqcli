@@ -28,26 +28,25 @@ _ai_cache_purge() {
 ai() {
     _ai_ready || return 1
 
-    # Modele (dopasowane do 6GB VRAM: Q4_K_M / mini)
-    local MODEL="deepseek-coder-v2:16b"   # mechanik — 8.9GB, najlżejszy coder
+    # Profile Ollama (dopasowane do 6GB VRAM, 32GB RAM)
+    local PROFILE="mechanik"                     # deepseek-coder-v2:16b Q4_0, 8.9GB, 23.8 t/s
     case "$1" in
-        -f) MODEL="phi3:mini"; shift ;;          # szybki, mały
-        -pro) MODEL="qwen2.5:14b"; shift ;;      # głębszy, ~9GB, partial GPU
-        -light) MODEL="qwen2.5:7b"; shift ;;    # najlżejszy, full GPU
-        -cc) MODEL="deepseek-coder-v2:lite"; shift ;; # alternatywny coder
+        -f) PROFILE="mini"; shift ;;               # qwen2.5:7b Q4_K_M, 4.7GB full GPU, 39 t/s
+        -pro) PROFILE="normal"; shift ;;           # qwen2.5:14b Q4_K_M, 9.0GB partial, 8K ctx, 5.3 t/s
+        -m) PROFILE="mechanik"; shift ;;           # jawnie mechanik
     esac
 
     local q="$*"
     [[ -z "$q" ]] && { echo "ai: podaj pytanie."; return 1; }
 
     # Cache key
-    local h=$(echo "$MODEL$q" | sha256sum | cut -d' ' -f1)
+    local h=$(echo "$PROFILE$q" | sha256sum | cut -d' ' -f1)
     local f="$AI_CACHE/$h.md"
 
     _ai_cache_valid "$f" && { cat "$f"; return; }
 
-    echo -e "\e[34m[🧠 AI: $MODEL]\e[0m"
-    ollama run "$MODEL" "INSTRUKCJA: Odpowiadaj wyłącznie po polsku. $q" | tee "$f"
+    echo -e "\e[34m[🧠 AI: $PROFILE]\e[0m"
+    ollama run "$PROFILE" "INSTRUKCJA: Odpowiadaj wyłącznie po polsku. $q" | tee "$f"
 }
 
 # --- Fix: AI diagnoza journalctl ---

@@ -9,7 +9,7 @@ sysqcli() {
     echo -e "\e[1;33mUżytkownik: $USER | Profil: $SYSCLI_PROFILE | Tryb: $SYSCLI_MODE | PM: $SYSCLI_PM\e[0m"
     echo -e "─────────────────────────────────────────────────────────────"
     echo -e "\e[1;34m🤖 AI & DIAGNOSTYKA:\e[0m"
-    echo -e "  \e[1;32msc/si/sii\e[0m       - Asystent AI (DeepSeek / Phi3 / Llama 3)"
+    echo -e "  \e[1;32msc/si/sii\e[0m       - Asystent AI (mechanik / mini / normal)"
     echo -e "  \e[1;32mfix\e[0m            - AI analizuje błędy z journalctl i naprawia"
     echo -e "  \e[1;32msummary\e[0m        - AI podsumowuje Twój dzień w terminalu"
     echo -e "\n\e[1;34m🛡️ OCHRONA & ROLLBACK:\e[0m"
