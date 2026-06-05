@@ -6,6 +6,8 @@
 [![Made with](https://img.shields.io/badge/made_with-ZSH-ff69b4)](https://zsh.org)
 [![CI](https://github.com/QguAr71/sysqcli/actions/workflows/ci.yml/badge.svg)](https://github.com/QguAr71/sysqcli/actions/workflows/ci.yml)
 
+![SysQCLI demo](demo.gif)
+
 > 📖 [Polska dokumentacja (README.pl.md)](README.pl.md)
 
 **A modular ZSH configuration platform with built-in security mechanisms.**
