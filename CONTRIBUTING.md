@@ -1,61 +1,73 @@
 # Contributing to SysQCLI
 
-## Architektura
+> 📖 [Polska wersja (CONTRIBUTING.pl.md)](CONTRIBUTING.pl.md)
 
-SysQCLI jest **modularna** — każdy plik `.zsh` to osobny moduł z jedną odpowiedzialnością.
+## Architecture
+
+SysQCLI is **modular** — each `.zsh` file is a standalone module with a single responsibility.
 
 ```
-init.zsh           # Entry point — nie edytuj bez potrzeby
-├── rollback.zsh   # Snapshot + restore
+init.zsh           # Entry point — avoid editing unless adding new modules
+├── rollback.zsh   # Snapshots + restore
 ├── profiles.zsh   # Host detection
 ├── core.zsh       # Environment variables
 ├── deps.zsh       # Dependency checking
 ├── qpkg.zsh       # Package manager abstraction
 ├── integrity.zsh  # SHA256 signing
 ├── help.zsh       # Help center (sysqcli function)
-├── audit.zsh      # preexec/precmd hooks
+├── audit.zsh      # preexec/precmd hooks (audit + thermal + notify)
 ├── plugins.zsh    # ZSH plugins (p10k, syntax highlighting)
 ├── visuals.zsh    # Fastfetch + MOTD
 ├── ai.zsh         # Ollama integration
-├── monitor.zsh    # HUD + fkill + qhealth
+├── monitor.zsh    # fkill + qhealth
 ├── aliases.zsh    # Command aliases
 └── fun.zsh        # Non-essential utilities
 ```
 
-## Konwencje
+## Conventions
 
-### Zmienne systemowe
-- **Prefix `SYSCLI_*`** — eksportowane, używane przez wiele modułów
-- **Lokalne** — `local` wewnątrz funkcji
+### Environment Variables
+- **`SYSCLI_*` prefix** — exported, used across multiple modules
+- **`local`** — inside functions only
 
-### Nazewnictwo funkcji
-- `q*` — komendy użytkownika (`qsign`, `qverify`, `qhealth`)
-- `_q*` — funkcje wewnętrzne (`_qpkg_detect`, `_ai_cache_valid`)
-- `_*` — helpery wewnętrzne
+### Function Naming
+- `q*` — user-facing commands (`qsign`, `qverify`, `qhealth`)
+- `_q*` — internal module functions (`_qpkg_detect`, `_ai_cache_valid`)
+- `_*` — private helpers
 
-### Styl
-- 80 kolumn gdzie się da
-- Komentarze `# --- Sekcja ---` dla grup
-- Angielskie komentarze w kodzie, polskie komunikaty dla użytkownika
+### Style
+- 80 columns where practical
+- `# --- Section ---` for logical groups
+- English comments in code, user messages in the user's language
 
-## Dodawanie nowego modułu
+## Adding a New Module
 
-1. Stwórz plik `nazwa.zsh` w katalogu głównym
-2. Dodaj `source "$SYSCLI_ROOT/nazwa.zsh"` w `init.zsh` w odpowiedniej sekcji
-3. Opisz w `README.md`
+1. Create `name.zsh` in the root directory
+2. Add `source "$SYSCLI_ROOT/name.zsh"` in `init.zsh` in the appropriate section
+3. Document in `docs/MODULES.md`
+4. Add relevant help entries in `help.zsh`
 
-## Testowanie
+## Testing
 
 ```bash
-# Składnia
-zsh -n nowy_modul.zsh
+# Syntax check
+zsh -n new_module.zsh
 
-# Pełny test
-exec zsh  # przeładuje SysQCLI
+# Full test — reloads SysQCLI
+exec zsh
+
+# Scripted load test (no side effects)
+zsh -c 'export SYSCLI_ROOT="$HOME/.config/sysqcli"; source "$SYSCLI_ROOT/init.zsh"'
 ```
 
-## Przyszłe kierunki
+## CI
 
-- [ ] v2: multi-distro (apt, dnf, xbps) w `qpkg.zsh`
-- [ ] Testy automatyczne (CI z `zsh -n`)
-- [ ] Instalator (`curl | sh`)
+GitHub Actions runs `zsh -n` on every push and PR. All `.zsh` files must pass syntax check.
+
+## Roadmap
+
+- [ ] v2: multi-distro support (apt, dnf, xbps) in `qpkg.zsh`
+- [ ] v2: language-aware AI prompts (not hardcoded Polish)
+- [ ] `~/.sysqclirc` — user config without editing `init.zsh`
+- [ ] One-line installer (`curl | sh`)
+- [ ] Integration tests (mode start verification)

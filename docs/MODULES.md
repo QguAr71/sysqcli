@@ -1,9 +1,11 @@
-# Dokumentacja modułów
+# Module Documentation
+
+> 📖 [Polska wersja (MODULES.pl.md)](MODULES.pl.md)
 
 ## init.zsh
-**Entry point.** Decyduje o kolejności ładowania, wykrywa tryb, binduje F1.
+**Entry point.** Controls load order, detects operating mode, binds F1 to help.
 ```
-Przebieg:
+Flow:
   1. Snapshot (rollback)
   2. Profile (host detection)
   3. Core (env)
@@ -17,111 +19,110 @@ Przebieg:
      └── full      → audit + plugins + visuals + ai + monitor + aliases + fun
 ```
 
-**Zmienne ustawiane:**
-- `SYSCLI_VERSION` — wersja
-- `SYSCLI_ROOT` — ścieżka do configu
+**Variables set:**
+- `SYSCLI_VERSION` — version
+- `SYSCLI_ROOT` — config path
 - `SYSCLI_MODE` — full/safe/immutable
 
 ## core.zsh
-**Environment variables.** PATH, EDITOR, kolory FZF, terminal config.
+**Environment variables.** PATH, EDITOR, FZF color scheme, terminal config.
 
 ## profiles.zsh
-**Auto-detekcja hosta.** Na podstawie `hostname`:
+**Auto host detection.** Based on `hostname`:
 - `omen*`, `laptop*`, `SysQ*` → laptop/eco
 - `desktop*`, `ws*` → desktop/performance
-- Inne → generic/balanced
+- Other → generic/balanced
 
 ## qpkg.zsh
-**Abstrakcja package manager.** Wykrywa PM i dostarcza jednolity interfejs:
-- `qpkg install <pkg>` — instalacja
-- `qpkg upgrade` — aktualizacja
-- `qpkg check` — lista dostępnych aktualizacji
-- `qpkg clean` — czyszczenie cache
+**Package manager abstraction.** Detects PM and provides unified interface:
+- `qpkg install <pkg>` — install
+- `qpkg upgrade` — update
+- `qpkg check` — list available updates
+- `qpkg clean` — clean cache
 
-v2 doda obsługę apt, dnf, xbps.
+v2 will add apt, dnf, xbps support.
 
 ## deps.zsh
-**Sprawdzanie zależności.** Przy starcie sprawdza czy brakuje pakietów. `qinstall` instaluje z pacman, informuje o AUR.
+**Dependency checking.** On startup, checks for missing packages. `qinstall` installs from pacman and reports AUR packages.
 
 ## rollback.zsh
-**Snapshoty sesji.** Przy każdym starcie tworzy tarball wszystkich `.zsh`. GC trzyma max 10 snapshotów.
+**Session snapshots.** Creates a tarball of all `.zsh` files on each session start. GC keeps max 10 snapshots.
 
-Komendy:
-- `q_snapshot` — tworzy snapshot (auto przy starcie)
-- `qrestore` — przywraca ostatni snapshot
-- `qsnaps` — lista dostępnych snapshotów
+Commands:
+- `q_snapshot` — create snapshot (auto on start)
+- `qrestore` — restore last snapshot
+- `qsnaps` — list available snapshots
 
 ## integrity.zsh
-**SHA256 signing.** `qsign` podpisuje wszystkie `.zsh` (oprócz init.zsh — zmienia się co sesję). `qverify` sprawdza integralność.
+**SHA256 signing.** `qsign` signs all `.zsh` files (excluding init.zsh — changes every session). `qverify` checks integrity.
 
 ## audit.zsh
-**Unified hook system.** Jeden `preexec` + `precmd` zamiast konfliktujących hooków:
+**Unified hook system.** Single `preexec` + `precmd` instead of conflicting hooks:
 
-- **preexec:** audyt komend do pliku `~/.cache/sysqcli_audit.log` + thermal autopilot (tylko full + laptop)
-- **precmd:** powiadomienia dla komend trwających >10s
+- **preexec:** command audit to `~/.cache/sysqcli_audit.log` + thermal autopilot (full mode + laptop only)
+- **precmd:** desktop notifications for commands running >10s
 
 **Thermal autopilot:**
 - >83°C → throttle ON (powersave)
-- <65°C → throttle OFF (performance, jeśli był throttled)
+- <65°C → throttle OFF (performance, if was throttled)
 - 78-83°C → alert
 
 ## help.zsh
-**Help center.** Funkcja `sysqcli()` wyświetla pełną pomoc. F1 jest bindowane do `sysqcli`.
+**Help center.** `sysqcli` function displays full help. F1 is bound to it.
 
 ## plugins.zsh
-**Plugin management.** Ładuje:
-1. Powerlevel10k (z systemu lub OMZ)
+**Plugin management.** Loads:
+1. Powerlevel10k (system or OMZ path)
 2. zsh-autosuggestions + fast-syntax-highlighting (system paths)
-3. Kolory Frosted Mint
+3. Frosted Mint color scheme
 4. Completion config
 5. Atuin + Zoxide init
 6. Kitty completion
 7. ~/.p10k.zsh
 
 ## visuals.zsh
-**Wygląd.** Fastfetch + MOTD:
-- Liczba dostępnych aktualizacji
-- Miejsce na dysku
+**Appearance.** Fastfetch + MOTD:
+- Available updates count
+- Disk usage
 - Uptime
-- Coredumpy od wczoraj (warning)
+- Coredumps since yesterday (warning)
 - RAM >90% (warning)
 
-MOTD wyświetla się raz na sesję (guard `SYSCLI_MOTD_SHOWN`).
+MOTD shows once per session (guard: `SYSCLI_MOTD_SHOWN`).
 
 ## ai.zsh
-**Ollama integration.** Modele dopasowane do 6GB VRAM:
-- `sc` — DeepSeek Coder V2 16B (8.9 GB)
-- `si` — Phi3 mini (najszybszy)
-- `sii` — DeepSeek Coder (jak sc)
-- `siii` — Qwen 2.5 14B (głębszy)
+**Ollama integration.** Profiles optimized for 6GB VRAM:
+- `mechanik` — deepseek-coder-v2:16b Q4_0, 8.9 GB, 23.8 t/s (debug code/logs)
+- `mini` — qwen2.5:7b Q4_K_M, 4.7 GB full GPU, 39 t/s (fast diagnostics)
+- `normal` — qwen2.5:14b Q4_K_M, 9.0 GB partial, 5.3 t/s (deep analysis)
 
-Cache 24h — odpowiedzi zapisywane do `~/.cache/sysqcli_ai/`, TTL 24h, auto-purge.
+24h cache — responses stored in `~/.cache/sysqcli_ai/`, auto-purge.
 
-Funkcje:
-- `ai` — zapytanie do AI
-- `fix` — AI diagnoza journalctl
-- `summary` — AI podsumowanie dnia (atuin history)
-- `command_not_found_handler` — sugeruje poprawkę przez AI
+Functions:
+- `ai` — query AI
+- `fix` — AI diagnosis of journalctl
+- `summary` — AI daily summary from atuin history
+- `command_not_found_handler` — suggests fix via AI
 
 ## monitor.zsh
 **Monitoring.**
 
-- `fkill` — Process terminator przez FZF
-- `qhealth` — Raport diagnostyczny: temp, RAM, dysk, aktualizacje, coredumpy, uptime, governor
+- `fkill` — Process terminator via FZF
+- `qhealth` — Diagnostic report: temp, RAM, disk, updates, coredumps, uptime, governor
 - `qtop` — btop
 - `qtemp` — watch sensors
 - `qgpu` — nvidia-smi
 
 ## aliases.zsh
-**Komendy i aliasy.**
+**Commands and aliases.**
 
-- Podstawowe: `ls=lsd`, `cat=bat`, `top=btop`
-- Globalne: `G/L/M/NE` (pipe do grep/less/micro/null)
-- Tryby: `qsafe`, `qunsafe`, `qimmutable`, `qfull`
+- Basic overrides: `ls=lsd`, `cat=bat`, `top=btop`
+- Global pipe suffixes: `G/L/M/NE` (grep/less/micro/null)
+- Modes: `qsafe`, `qunsafe`, `qimmutable`, `qfull`
 - System: `up`, `qupdate`, `clean`, `turbo`, `eco`, `ports`
 - Smart extract: `ex`
-- Web: `wiki`, `google`, `github`
-- Nawigacja: `zi`, `fn`, `fp`, `fedit`, `y`
+- Web search: `wiki`, `google`, `github`
+- Navigation: `zi`, `fn`, `fp`, `fedit`, `y`
 
 ## fun.zsh
-**Lekkie dodatki.** `pogodynka` — curl wttr.in dla Warszawy.
+**Light extras.** `pogodynka` — curl wttr.in for Warsaw.

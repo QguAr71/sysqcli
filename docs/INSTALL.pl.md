@@ -1,8 +1,6 @@
-# Installation Guide
+# Instalacja szczegółowa
 
-> 📖 [Polska wersja (INSTALL.pl.md)](INSTALL.pl.md)
-
-## Quick Install
+## Szybka
 
 ```bash
 git clone https://github.com/QguAr71/sysqcli.git ~/.config/sysqcli
@@ -11,35 +9,35 @@ echo 'source "$SYSCLI_ROOT/init.zsh"' >> ~/.zshrc
 exec zsh
 ```
 
-## Dependency Installation
+## Instalacja zależności
 
-On first run, SysQCLI checks for missing packages. Type:
+Po pierwszym uruchomieniu SysQCLI sprawdzi, czego brakuje. Wpisz:
 
 ```bash
 qinstall
 ```
 
-This installs via `pacman`:
+To zainstaluje z `pacman`:
 - `fzf`, `zoxide`, `micro`, `bat`, `lsd`, `fastfetch`, `ripgrep`, `fd`
 
-And reports AUR packages:
-- `zinit-git` (optional)
-- `zsh-autosuggestions` (optional)
+Oraz poinformuje o pakietach AUR:
+- `zinit-git` (opcjonalne)
+- `zsh-autosuggestions` (opcjonalne)
 
-## Manual Install (Step by Step)
+## Instalacja ręczna (krok po kroku)
 
 ```bash
-# 1. Dependencies
+# 1. Zależności
 sudo pacman -S --needed fzf zoxide micro bat lsd fastfetch ripgrep fd
 
-# 2. Optional
+# 2. Opcjonalne
 sudo pacman -S --needed ollama grc cpupower
 yay -S zinit-git zsh-autosuggestions
 
-# 3. Clone
+# 3. Sklonuj
 git clone https://github.com/QguAr71/sysqcli.git ~/.config/sysqcli
 
-# 4. Hook into .zshrc
+# 4. Podepnij do .zshrc
 echo 'export SYSCLI_ROOT="$HOME/.config/sysqcli"' >> ~/.zshrc
 echo 'source "$SYSCLI_ROOT/init.zsh"' >> ~/.zshrc
 
@@ -47,26 +45,26 @@ echo 'source "$SYSCLI_ROOT/init.zsh"' >> ~/.zshrc
 exec zsh
 ```
 
-## Uninstall
+## Odinstalowanie
 
 ```bash
 rm -rf ~/.config/sysqcli
-# Remove SYSCLI_ROOT lines from ~/.zshrc
+# Usuń linie SYSCLI_ROOT z ~/.zshrc
 sed -i '/SYSCLI_ROOT/d;/sysqcli/d' ~/.zshrc
 exec zsh
 ```
 
-## Sudoers (Optional)
+## Uprawnienia
 
-Some functions require passwordless `sudo`:
+Niektóre funkcje wymagają `sudo` bez hasła:
 - `turbo` / `eco` — cpupower
 - `clean` — paccache, journalctl
 - `up` — pacman
 
-Add to `/etc/sudoers` via `visudo`:
+Dodaj do `/etc/sudoers` (przez `visudo`):
 
 ```
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/pacman, /usr/bin/cpupower, /usr/bin/paccache, /usr/bin/journalctl
 ```
 
-Without this, SysQCLI still works — it will just prompt for password.
+Bez tego SysQCLI nadal działa — tylko zapyta o hasło.
