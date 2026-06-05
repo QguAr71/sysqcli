@@ -1,0 +1,7 @@
+# SysQCLI user config — uncomment to disable modules
+# SYSCLI_NO_AI=1        # disable AI
+# SYSCLI_NO_MONITOR=1   # disable monitoring (fkill, qhealth)
+# SYSCLI_NO_VISUALS=1   # disable fastfetch/MOTD
+# SYSCLI_NO_FUN=1       # disable weather utility
+# SYSCLI_NO_PLUGINS=1   # disable p10k + syntax highlighting
+# SYSCLI_PROFILE="laptop"  # force profile (laptop/desktop/generic)

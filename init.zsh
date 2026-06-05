@@ -9,6 +9,9 @@
 export SYSCLI_VERSION="1.0"
 export SYSCLI_ROOT="${SYSCLI_ROOT:-$HOME/.config/sysqcli}"
 
+# --- 0. USER CONFIG (~/.sysqclirc) ---
+[[ -f "$HOME/.sysqclirc" ]] && source "$HOME/.sysqclirc"
+
 # --- 1. SNAPSHOT (zawsze, przed wszystkim) ---
 source "$SYSCLI_ROOT/rollback.zsh"
 q_snapshot
@@ -60,11 +63,11 @@ fi
 
 # === TRYB: FULL (domyślny) ===
 source "$SYSCLI_ROOT/audit.zsh"
-source "$SYSCLI_ROOT/plugins.zsh"
-source "$SYSCLI_ROOT/visuals.zsh"
-source "$SYSCLI_ROOT/ai.zsh"
-source "$SYSCLI_ROOT/monitor.zsh"
+[[ -z "$SYSCLI_NO_PLUGINS" ]]  && source "$SYSCLI_ROOT/plugins.zsh"
+[[ -z "$SYSCLI_NO_VISUALS" ]]  && source "$SYSCLI_ROOT/visuals.zsh"
+[[ -z "$SYSCLI_NO_AI" ]]       && source "$SYSCLI_ROOT/ai.zsh"
+[[ -z "$SYSCLI_NO_MONITOR" ]]  && source "$SYSCLI_ROOT/monitor.zsh"
 source "$SYSCLI_ROOT/aliases.zsh"
-source "$SYSCLI_ROOT/fun.zsh"
+[[ -z "$SYSCLI_NO_FUN" ]]      && source "$SYSCLI_ROOT/fun.zsh"
 
 echo -e "\e[1;34m⚡ SysQCLI v$SYSCLI_VERSION | FULL MODE | profil: $SYSCLI_PROFILE | Power: $SYSCLI_POWER\e[0m"

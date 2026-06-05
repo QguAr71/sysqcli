@@ -15,6 +15,12 @@ Session snapshots with rollback, SHA256 integrity verification, three operating 
 ## Quick Install
 
 ```bash
+curl -sSL https://raw.githubusercontent.com/QguAr71/sysqcli/master/install.sh | sh
+```
+
+Or manually:
+
+```bash
 git clone https://github.com/QguAr71/sysqcli.git ~/.config/sysqcli
 echo 'export SYSCLI_ROOT="$HOME/.config/sysqcli"' >> ~/.zshrc
 echo 'source "$SYSCLI_ROOT/init.zsh"' >> ~/.zshrc
