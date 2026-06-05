@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Arch_Linux-1793d1?logo=archlinux)](https://archlinux.org)
 [![Made with](https://img.shields.io/badge/made_with-ZSH-ff69b4)](https://zsh.org)
-[![CI](https://img.shields.io/badge/CI-passing-brightgreen)](https://github.com/QguAr71/sysqcli/actions)
+[![CI](https://github.com/QguAr71/sysqcli/actions/workflows/ci.yml/badge.svg)](https://github.com/QguAr71/sysqcli/actions/workflows/ci.yml)
 
 **Modularna platforma konfiguracyjna ZSH z mechanizmami bezpieczeństwa.**
 
