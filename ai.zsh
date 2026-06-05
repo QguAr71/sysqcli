@@ -32,7 +32,7 @@ ai() {
     local PROFILE="mechanik"                     # deepseek-coder-v2:16b Q4_0, 8.9GB, 23.8 t/s
     case "$1" in
         -f) PROFILE="mini"; shift ;;               # qwen2.5:7b Q4_K_M, 4.7GB full GPU, 39 t/s
-        -pro) PROFILE="normal"; shift ;;           # qwen2.5:14b Q4_K_M, 9.0GB partial, 8K ctx, 5.3 t/s
+
         -m) PROFILE="mechanik"; shift ;;           # jawnie mechanik
     esac
 
@@ -77,7 +77,7 @@ command_not_found_handler() {
 alias sc='ai'          # DeepSeek Coder (domyślny)
 alias si='ai -f'       # Phi3 mini (szybki)
 alias sii='ai'         # DeepSeek Coder
-alias siii='ai -pro'   # Qwen 14b (głębszy)
+
 
 # --- Purge cache przy starcie ---
 _ai_cache_purge
