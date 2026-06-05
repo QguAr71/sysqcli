@@ -66,7 +66,6 @@ exec zsh
 | `sc` | DeepSeek Coder V2 16B |
 | `si` | Phi3 mini (szybki) |
 | `sii` | DeepSeek Coder (jak sc) |
-| `siii` | Qwen 2.5 14B (głębszy) |
 | `fix` | AI diagnoza journalctl |
 | `summary` | AI podsumowanie dnia z atuin |
 

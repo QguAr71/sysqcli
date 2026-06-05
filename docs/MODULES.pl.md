@@ -93,7 +93,7 @@ MOTD wyświetla się raz na sesję (guard `SYSCLI_MOTD_SHOWN`).
 - `sc` — DeepSeek Coder V2 16B (8.9 GB)
 - `si` — Phi3 mini (najszybszy)
 - `sii` — DeepSeek Coder (jak sc)
-- `siii` — Qwen 2.5 14B (głębszy)
+
 
 Cache 24h — odpowiedzi zapisywane do `~/.cache/sysqcli_ai/`, TTL 24h, auto-purge.
 

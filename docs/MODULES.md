@@ -94,7 +94,7 @@ MOTD shows once per session (guard: `SYSCLI_MOTD_SHOWN`).
 **Ollama integration.** Profiles optimized for 6GB VRAM:
 - `mechanik` — deepseek-coder-v2:16b Q4_0, 8.9 GB, 23.8 t/s (debug code/logs)
 - `mini` — qwen2.5:7b Q4_K_M, 4.7 GB full GPU, 39 t/s (fast diagnostics)
-- `normal` — qwen2.5:14b Q4_K_M, 9.0 GB partial, 5.3 t/s (deep analysis)
+
 
 24h cache — responses stored in `~/.cache/sysqcli_ai/`, auto-purge.
 

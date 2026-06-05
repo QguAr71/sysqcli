@@ -85,7 +85,6 @@ Detailed module docs: [docs/MODULES.md](docs/MODULES.md)
 | `sc` | mechanik (deepseek-coder-v2:16b, 23.8 t/s) |
 | `si` | mini (qwen2.5:7b, 39 t/s) |
 | `sii` | mechanik (same as sc) |
-| `siii` | normal (qwen2.5:14b, 5.3 t/s) |
 | `fix` | AI diagnosis of journalctl |
 | `summary` | AI daily summary from atuin history |
 
