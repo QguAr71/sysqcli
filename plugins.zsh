@@ -13,20 +13,15 @@ fi
 # --- System plugins (CachyOS/Arch paths) ---
 [[ -f /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]] && \
     source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
-[[ -f /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh ]] && \
-    source /usr/share/zsh/plugins/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
+[[ -f /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ]] && \
+    source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=#928374,italic"
 
 # --- Syntax highlighting — Frosted Mint ---
-if command -v fast-syntax-highlighting-config &>/dev/null; then
-    fast-syntax-highlighting-config --set-face main 'fg=#a597d2' 2>/dev/null
-    fast-syntax-highlighting-config --set-face path 'fg=#8ec07c' 2>/dev/null
-else
-    zstyle ':fast-syntax-highlighting' 'main' 'fg=#a597d2'
-    zstyle ':fast-syntax-highlighting' 'path' 'fg=#8ec07c'
-fi
-zstyle ':fast-syntax-highlighting' 'string' 'fg=#83a598'
+zstyle ':zsh-syntax-highlighting' 'main' 'fg=#a597d2'
+zstyle ':zsh-syntax-highlighting' 'path' 'fg=#8ec07c'
+zstyle ':zsh-syntax-highlighting' 'string' 'fg=#83a598'
 
 # --- Completion ---
 zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|[._-]=* r:|=*' 'l:|=* r:|=*'
