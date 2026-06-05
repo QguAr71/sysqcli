@@ -16,7 +16,7 @@ fkill() {
 
 # --- qhealth: Szybka diagnostyka ---
 qhealth() {
-    echo -e "\e[1;35m◢◤ SysQCLI HEALTH CHECK ◢◤\e[0m"
+    echo -e "\e[1;35m SysQCLI HEALTH CHECK \e[0m"
     echo -ne "  CPU: "
     sensors 2>/dev/null | grep -m1 -E 'Package id 0|edge|Core 0' | awk '{print $4}'
     echo -ne " RAM: "

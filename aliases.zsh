@@ -59,7 +59,7 @@ up() {
 
     echo -e "\n\e[1;34m [3/4] Aktualizacja modeli AI (Ollama)...\e[0m"
     command -v ollama &>/dev/null && for m in qwen2.5:7b qwen2.5:14b deepseek-coder-v2:16b; do
-        echo "→ Pull $m..."
+        echo " Pull $m..."
         ollama pull "$m" 2>/dev/null
     done
 
@@ -121,7 +121,7 @@ zi() {
     [[ -n "$dir" ]] && cd "$dir"
 }
 
-# szukaj w plikach → micro
+# szukaj w plikach  micro
 fn() {
     local line
     line=$(rg --column --line-number --no-heading --color=always --smart-case --glob '!.git/*' "$1" 2>/dev/null | \

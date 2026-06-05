@@ -2,8 +2,8 @@
 # ===============================================================
 # SysQCLI Config v1.0 — INIT (Entry Point)
 # ===============================================================
-# Kolejność: snapshot → profile → core → deps → rollback → integrity
-#            → MODE CHECK → audit → [full: plugins/visuals/ai/monitor] → aliases
+# Kolejność: snapshot  profile  core  deps  rollback  integrity
+#             MODE CHECK  audit  [full: plugins/visuals/ai/monitor]  aliases
 # ===============================================================
 
 export SYSCLI_VERSION="1.0"

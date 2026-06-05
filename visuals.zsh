@@ -15,7 +15,7 @@ sysqcli_motd() {
     [[ -n "$SYSCLI_MOTD_SHOWN" ]] && return
     export SYSCLI_MOTD_SHOWN=1
 
-    echo -e "\n\e[1;35m◢◤ SysQCLI SYSTEM ONLINE ◢◤\e[0m"
+    echo -e "\n\e[1;35m SysQCLI SYSTEM ONLINE \e[0m"
     echo -ne "\e[38;2;142;192;124mStatus aktualizacji: \e[1;37m"
     local updates=$(checkupdates 2>/dev/null | wc -l || echo "0")
     echo -e "$updates \e[1;33mpakietów czeka\e[0m"

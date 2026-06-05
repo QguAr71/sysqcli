@@ -5,7 +5,7 @@
 
 sysqcli() {
     clear
-    echo -e "\e[1;35m         ◢◤ SysQCLI v$SYSCLI_VERSION — SYSTEM DOWODZENIA ◢◤\e[0m"
+    echo -e "\e[1;35m          SysQCLI v$SYSCLI_VERSION — SYSTEM DOWODZENIA \e[0m"
     echo -e "\e[1;33mUżytkownik: $USER | Profil: $SYSCLI_PROFILE | Tryb: $SYSCLI_MODE | PM: $SYSCLI_PM\e[0m"
     echo -e "─────────────────────────────────────────────────────────────"
     echo -e "\e[1;34m AI & DIAGNOSTYKA:\e[0m"
@@ -33,7 +33,7 @@ sysqcli() {
     echo -e "  \e[1;32mqinstall\e[0m       - Zainstaluj brakujące zależności"
     echo -e "\n\e[1;34m\uf07b NAWIGACJA:\e[0m"
     echo -e "  \e[1;32mzi\e[0m             - Skoki Zoxide + FZF"
-    echo -e "  \e[1;32mfn [tekst]\e[0m     - Szukaj frazy w plikach → edytor"
+    echo -e "  \e[1;32mfn [tekst]\e[0m     - Szukaj frazy w plikach  edytor"
     echo -e "  \e[1;32mfp\e[0m             - Przeglądaj pliki FZF z podglądem"
     echo -e "  \e[1;32mfedit\e[0m           - Wybierz i edytuj plik przez FZF"
     echo -e "  \e[1;32mfkill\e[0m           - Zabij proces przez FZF"
@@ -49,6 +49,6 @@ sysqcli() {
     echo -e "\e[1;33mSystem gotowy. F1 = ta pomoc.\e[0m"
 }
 
-# F1 → sysqcli
+# F1  sysqcli
 bindkey -s '^[OP' 'sysqcli\n' 2>/dev/null
 bindkey -s '^[[[A' 'sysqcli\n' 2>/dev/null
