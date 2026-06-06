@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 # ===============================================================
-# SysQCLI Config v1.0 — PLUGINS (zinit + p10k + system plugins)
+# SysQCLI v1.1 — PLUGINS (p10k + system plugins)
+# v1.1: wywalone relikty "zinit" oraz "lazy load" z nagłówka — nieużywane
 # ===============================================================
 
 # --- Powerlevel10k (z systemu lub z zinit) ---
