@@ -49,33 +49,60 @@ ai() {
     ollama run "$PROFILE" "INSTRUKCJA: Odpowiadaj wyłącznie po polsku. $q" | tee "$f"
 }
 
-# --- Fix: Diagnostyka deterministyczna + certyfikowane wzorce ---
-fix() {
-    local mode="${1:-full}"
-    [[ "$mode" == "--explain" ]] && { _fix_explain "$2"; return; }
-    [[ "$mode" == "--report" ]] && { _fix_report; return; }
+# --- Modular Collectors (v0.2) ---
 
-    echo -e "\e[33m[ SysQCLI DIAG] Zbieram dane...\e[0m"
+_collect_systemd_failed() {
+    systemctl --user --failed --no-legend 2>/dev/null | awk '{print "FAILED:"$2}'
+    systemctl --failed --no-legend 2>/dev/null | awk '{print "FAILED:"$2}'
+}
 
-    # 1. Collect
-    local diag_data=""
-    # Failed services
-    systemctl --user --failed --no-legend 2>/dev/null | awk '{print "FAILED:"$2}' >> /tmp/sysqcli_diag
-    systemctl --failed --no-legend 2>/dev/null | awk '{print "FAILED:"$2}' >> /tmp/sysqcli_diag
-    # Coredump executables (last 24h)
-    coredumpctl list --since yesterday --no-legend 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i ~ /^\//) {print "CORE:"$i; break}}' >> /tmp/sysqcli_diag
-    # Signal summary
-    coredumpctl list --since yesterday --no-legend 2>/dev/null | awk '{print $6}' | sort -u | while read s; do echo "SIGNAL:$s"; done >> /tmp/sysqcli_diag
-    # Unique errors from journalctl
-    local jrnl=$(journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null \
+_collect_coredumps() {
+    coredumpctl list --since yesterday --no-legend 2>/dev/null \
+        | awk '{for(i=1;i<=NF;i++) if($i ~ /^\//) {print "CORE:"$i; break}}'
+    coredumpctl list --since yesterday --no-legend 2>/dev/null \
+        | awk '{print $6}' | sort -u | while read s; do echo "SIGNAL:$s"; done
+}
+
+_collect_journal_errors() {
+    journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null \
         | grep -vE '^\s*(#|Stack trace|Available|ELF|$)' \
         | grep -vE 'dumped core|░░|\.so\.|pthread_kill|raise|abort|PyEval|Py_Bytes|Py_Run|__libc_start' \
-        | sort -u | tr '\n' '|')
-    echo "ERRORS:${jrnl}" >> /tmp/sysqcli_diag
+        | sort -u | tr '\n' '|'
+}
+
+_collect_session_info() {
+    echo "CONTEXT:kernel=$(uname -r)"
+    echo "CONTEXT:desktop=${XDG_CURRENT_DESKTOP:-unknown}"
+    echo "CONTEXT:session=${XDG_SESSION_TYPE:-unknown}"
+    echo "CONTEXT:host=$(hostname)"
+    echo "CONTEXT:uptime=$(uptime -p | sed 's/up //')"
+    command -v nvidia-smi &>/dev/null && echo "CONTEXT:gpu=nvidia" || echo "CONTEXT:gpu=none"
+}
+
+# --- Fix: Diagnostyka deterministyczna + certyfikowane wzorce (v0.2) ---
+fix() {
+    local mode="${1:-full}"
+    local dry_run=0
+
+    case "$mode" in
+        --dry-run) dry_run=1; mode="full" ;;
+        --explain) _fix_explain "$2"; return ;;
+        --report)  _fix_report; return ;;
+    esac
+
+    echo -e "\e[33m[ SysQCLI DIAG] Zbieram dane...\e[0m"
+    [[ $dry_run -eq 1 ]] && echo -e "\e[36m[DRY-RUN] Tryb symulacji — żadne zmiany nie zostaną wykonane.\e[0m"
+
+    # 1. Collect (modular)
+    local tmpfile="/tmp/sysqcli_diag_$$"
+    _collect_systemd_failed > "$tmpfile"
+    _collect_coredumps >> "$tmpfile"
+    _collect_session_info >> "$tmpfile"
+    echo "ERRORS:$(_collect_journal_errors)" >> "$tmpfile"
 
     # 2. Match
-    local result=$(python3 ~/.config/sysqcli/patterns/matcher.py < /tmp/sysqcli_diag 2>/dev/null)
-    rm -f /tmp/sysqcli_diag
+    local result=$(python3 ~/.config/sysqcli/patterns/matcher.py < "$tmpfile" 2>/dev/null)
+    rm -f "$tmpfile"
 
     if [[ -z "$result" ]]; then
         echo -e "\e[1;31m✗ Błąd: nie można uruchomić matcher.py\e[0m"
@@ -86,13 +113,14 @@ fix() {
     if [[ "$result" == "NO_MATCH" ]]; then
         _fix_no_match
     else
-        _fix_show_match "$result"
+        _fix_show_match "$result" "$dry_run"
     fi
 }
 
 # --- Helper: wyświetl dopasowane rozwiązanie ---
 _fix_show_match() {
     local data="$1"
+    local dry_run="${2:-0}"
     local id=$(echo "$data" | grep '^ID:' | cut -d: -f2-)
     local name=$(echo "$data" | grep '^NAME:' | cut -d: -f2-)
     local conf=$(echo "$data" | grep '^CONFIDENCE:' | cut -d: -f2-)
@@ -102,6 +130,7 @@ _fix_show_match() {
     local action=$(echo "$data" | grep '^ACTION:' | cut -d: -f2-)
     local rollback=$(echo "$data" | grep '^ROLLBACK:' | cut -d: -f2-)
     local alt=$(echo "$data" | grep '^ALT:' | cut -d: -f2-)
+    local score=$(echo "$data" | grep '^SCORE:' | cut -d: -f2-)
 
     # Confidence badge
     local badge=""
@@ -120,7 +149,8 @@ _fix_show_match() {
         none)   rbadge="brak" ;;
     esac
 
-    echo -e "\n$badge\n"
+    echo -e "\n$badge"
+    [[ -n "$score" ]] && echo -e "\e[90m  Score: $score\e[0m"
     echo -e "\e[1;36m═══════ $name ═══════\e[0m"
     echo -e "\e[1;33mPrzyczyna:\e[0m $expl"
     [[ -n "$impact" ]] && echo -e "\e[1;33mSkutki:\e[0m   $impact"
@@ -132,6 +162,14 @@ _fix_show_match() {
     echo -e "  Źródło:     $conf"
     [[ -n "$rollback" ]] && echo -e "  Rollback:   $rollback"
     echo ""
+
+    # Dry-run — tylko symulacja
+    if [[ $dry_run -eq 1 ]]; then
+        echo -e "\e[36m[SYMULACJA] Wykonałbym: $action\e[0m"
+        [[ -n "$rollback" ]] && echo -e "\e[36m[SYMULACJA] Rollback:     $rollback\e[0m"
+        echo -e "\e[36m[SYMULACJA] Status: brak zmian w systemie.\e[0m"
+        return
+    fi
 
     # Action prompt
     if [[ "$conf" == "ai_suggestion" ]]; then
@@ -196,16 +234,22 @@ _fix_report() {
     local report="$HOME/sysqcli_report_$(date +%Y%m%d_%H%M%S).txt"
     {
         echo "═══════ SysQCLI Diagnostic Report ═══════"
-        echo "Data: $(date)"
-        echo "Host: $(hostname)"
-        echo "Kernel: $(uname -r)"
+        echo "Data:      $(date '+%F %T')"
+        echo "Host:      $(hostname)"
+        echo "Kernel:    $(uname -r)"
+        echo "DE:        ${XDG_CURRENT_DESKTOP:-unknown}"
+        echo "Session:   ${XDG_SESSION_TYPE:-unknown}"
+        echo "Uptime:    $(uptime -p | sed 's/up //')"
+        command -v nvidia-smi &>/dev/null && echo "GPU:       nvidia ($(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null))"
         echo ""
         echo "=== FAILED SERVICES ==="
         systemctl --user --failed --no-legend 2>/dev/null
         systemctl --failed --no-legend 2>/dev/null
         echo ""
         echo "=== COREDUMPS (24h) ==="
-        coredumpctl list --since yesterday --no-legend 2>/dev/null | tail -20
+        echo "Total: $(coredumpctl list --since yesterday --no-legend 2>/dev/null | wc -l)"
+        coredumpctl list --since yesterday --no-legend 2>/dev/null \
+            | awk '{for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort | uniq -c | sort -rn | head -10
         echo ""
         echo "=== JOURNALCTL ERRORS (unique) ==="
         journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null \
