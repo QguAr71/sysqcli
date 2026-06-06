@@ -20,6 +20,7 @@ q_snapshot() {
 }
 
 # --- RESTORE (ostatni snapshot) ---
+qrestore() { q_restore_last }
 q_restore_last() {
     local last=$(ls -t "$ROLLBACK_DIR"/*.tar.gz 2>/dev/null | head -1)
     [[ -z "$last" ]] && { echo " Brak snapshotów."; return 1; }
