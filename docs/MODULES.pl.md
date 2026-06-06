@@ -89,17 +89,32 @@ Komendy:
 MOTD wyświetla się raz na sesję (guard `SYSCLI_MOTD_SHOWN`).
 
 ## ai.zsh
-**Ollama integration.** Modele dopasowane do 6GB VRAM:
-- `sc` — DeepSeek Coder V2 16B (8.9 GB)
-- `si` — Phi3 mini (najszybszy)
-- `sii` — DeepSeek Coder (jak sc)
-
+**Integracja Ollama + silnik diagnostyczny.** Modele dopasowane do 6GB VRAM:
+- `mechanik` — deepseek-coder-v2:16b Q4_0, 8.9 GB, 23.8 t/s
+- `mini` — qwen2.5:7b Q4_K_M, 4.7 GB full GPU, 39 t/s
 
 Cache 24h — odpowiedzi zapisywane do `~/.cache/sysqcli_ai/`, TTL 24h, auto-purge.
 
-Funkcje:
-- `ai` — zapytanie do AI
-- `fix` — AI diagnoza journalctl
+### Silnik diagnostyczny (`fix`)
+Używa **deterministycznego dopasowania wzorców YAML** — nie halucynacji AI:
+1. Modułowe collectory zbierają dane (`systemctl failed`, `coredumpctl`, `journalctl`, kontekst)
+2. `matcher.py` porównuje z `patterns/common.yaml` (5 certyfikowanych wzorców)
+3. ZNALEZIONO → pokazuje diagnozę + ryzyko + rollback → `[T/n/D]`
+4. NIE ZNALEZIONO → `[R]aport / [D]eleguj do Goose / [S]połeczność / [A]nuluj`
+
+| Komenda | Działanie |
+|---------|----------|
+| `fix` | Pełne skanowanie diagnostyczne + dopasowanie wzorców |
+| `fix --dry-run` | Symulacja bez wykonywania zmian |
+| `fix --friendly` | Lokalne AI tłumaczy diagnozę na przyjazny polski |
+| `fix --report` | Zapisuje pełny raport diagnostyczny z kontekstem |
+| `fix --explain <błąd>` | AI wyjaśnia konkretny komunikat błędu |
+
+**Bezpieczeństwo:** Wszystkie wykonywalne komendy pochodzą z YAML, nigdy z modelu. Lokalne AI tylko przepisuje tekst dla `--friendly`.
+
+### Funkcje AI
+- `ai` / `sc` — zapytanie do mechanika
+- `si` — zapytanie do mini (szybki)
 - `summary` — AI podsumowanie dnia (atuin history)
 - `command_not_found_handler` — sugeruje poprawkę przez AI
 
@@ -125,3 +140,22 @@ Funkcje:
 
 ## fun.zsh
 **Lekkie dodatki.** `pogodynka` — curl wttr.in dla Warszawy.
+
+## patterns/
+**Certyfikowane wzorce diagnostyczne.** Baza YAML znanych wzorców awarii z bezpiecznymi procedurami naprawczymi.
+
+- `common.yaml` — 5 certyfikowanych wzorców:
+  - Qt6 + Wayland tray crash (`arch-update-tray`)
+  - NVIDIA zawieszenie po suspendzie (`nvidia-modeset`)
+  - Awaria usług portalowych (`xdg-desktop-portal`)
+  - WirePlumber / PipeWire awaria audio
+  - Brak pamięci (OOM killer)
+- `matcher.py` — Python 3 + PyYAML silnik scoringowy:
+  - trafienie service: +5
+  - trafienie exe: +4
+  - trafienie signal: +3
+  - trafienie error: +3
+  - bonus multi-hit: +2 za każdy dodatkowy typ trafienia
+  - próg: score ≥ 4
+
+**Struktura:** Każdy wzorzec zawiera `explanation`, `impact`, `recommended_action`, `risk`, `rollback`, `alternative`, `references` oraz poziom `confidence` (`certified`/`community`/`ai_suggestion`). Społeczność może dodawać nowe wzorce przez PR.

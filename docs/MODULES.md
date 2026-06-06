@@ -91,16 +91,32 @@ Commands:
 MOTD shows once per session (guard: `SYSCLI_MOTD_SHOWN`).
 
 ## ai.zsh
-**Ollama integration.** Profiles optimized for 6GB VRAM:
-- `mechanik` — deepseek-coder-v2:16b Q4_0, 8.9 GB, 23.8 t/s (debug code/logs)
-- `mini` — qwen2.5:7b Q4_K_M, 4.7 GB full GPU, 39 t/s (fast diagnostics)
-
+**Ollama integration + certified diagnostic engine.** Profiles optimized for 6GB VRAM:
+- `mechanik` — deepseek-coder-v2:16b Q4_0, 8.9 GB, 23.8 t/s
+- `mini` — qwen2.5:7b Q4_K_M, 4.7 GB full GPU, 39 t/s
 
 24h cache — responses stored in `~/.cache/sysqcli_ai/`, auto-purge.
 
-Functions:
-- `ai` — query AI
-- `fix` — AI diagnosis of journalctl
+### Diagnostic Engine (`fix`)
+Uses **deterministic YAML pattern matching** — not AI hallucination:
+1. Modular collectors gather data (`systemctl failed`, `coredumpctl`, `journalctl`, system context)
+2. `matcher.py` scores against `patterns/common.yaml` (5 certified patterns)
+3. MATCH → shows diagnosis + risk + rollback → `[T/n/D]`
+4. NO MATCH → `[R]eport / [D]elegate to Goose / [S]upport / [A]bort`
+
+| Command | What it does |
+|---------|-------------|
+| `fix` | Full diagnostic scan + pattern matching |
+| `fix --dry-run` | Simulate without executing |
+| `fix --friendly` | 16B AI translates YAML diagnosis to natural Polish |
+| `fix --report` | Save full diagnostic report with system context |
+| `fix --explain <error>` | AI explains a specific error message |
+
+**Safety:** All executable commands come from YAML, never from the language model. The 16B AI only rewrites text for `--friendly` mode.
+
+### AI Functions
+- `ai` / `sc` — query mechanik
+- `si` — query mini (fast)
 - `summary` — AI daily summary from atuin history
 - `command_not_found_handler` — suggests fix via AI
 
@@ -126,3 +142,22 @@ Functions:
 
 ## fun.zsh
 **Light extras.** `pogodynka` — curl wttr.in for Warsaw.
+
+## patterns/
+**Certified diagnostic patterns.** YAML database of known failure patterns with safe repair procedures.
+
+- `common.yaml` — 5 certified patterns:
+  - Qt6 + Wayland tray crash (`arch-update-tray`)
+  - NVIDIA suspend hang (`nvidia-modeset`)
+  - Portal service failure (`xdg-desktop-portal`)
+  - WirePlumber / PipeWire audio crash
+  - Out of Memory (OOM) killer
+- `matcher.py` — Python 3 + PyYAML scoring engine:
+  - service match: +5
+  - exe match: +4
+  - signal match: +3
+  - error match: +3
+  - multi-hit bonus: +2 per extra match type
+  - threshold: score ≥ 4
+
+**Structure:** Each pattern includes `explanation`, `impact`, `recommended_action`, `risk`, `rollback`, `alternative`, `references`, and `confidence` level (`certified`/`community`/`ai_suggestion`). Community can add new patterns via PR.
