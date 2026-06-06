@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""SysQCLI Pattern Matcher v0.2 — dopasowuje dane diagnostyczne do wzorców YAML.
-   v0.2: score w output, bonus za multi-hit, obsługa CONTEXT:"""
+"""SysQCLI Pattern Matcher v1.0 — dopasowuje dane diagnostyczne do wzorców YAML.
+   Scoring: service+5, exe+4, signal+3, error+3, multi-hit bonus+2, threshold=4."""
 import yaml
 import sys
 import os

@@ -1,6 +1,8 @@
 #!/usr/bin/env zsh
 # ===============================================================
-# SysQCLI Config v1.0 — AI (Ollama + Cache + Fix + Summary)
+# SysQCLI v1.4 — AI (Ollama + fix() Diagnostic Engine + Goose Bridge)
+# v1.1: dodano fix(), v1.2: stale throttle, v1.3: thermal autopilot
+# v1.4: YAML patterns + matcher + --dry-run/--friendly/--report/--explain
 # ===============================================================
 
 AI_CACHE="$HOME/.cache/sysqcli_ai"

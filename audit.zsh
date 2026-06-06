@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 # ===============================================================
-# SysQCLI v1.1 — AUDIT & GUARD (Unified preexec + precmd)
+# SysQCLI v1.2 — AUDIT & GUARD (Unified preexec + precmd)
+# v1.2: stale throttle fix (.sysqcli_throttled flag + init check)
 # Audyt komend + thermal autopilot + powiadomienia >10s
 # v1.1: Security Guard — blokada niebezpiecznych komend
 # ===============================================================
