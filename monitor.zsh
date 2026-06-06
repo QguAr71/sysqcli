@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
 # ===============================================================
-# SysQCLI v1.1 — MONITOR (HUD, fkill, qhealth, qtop, qgpu, qtemp)
+# SysQCLI v1.1 — MONITOR (fkill, qhealth, qtop, qgpu, qtemp)
 # v1.1: qhealth — LANG=C free (locale PL) + cpupower governor awk fix
 # ===============================================================
 
