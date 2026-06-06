@@ -107,13 +107,65 @@ Rozwiązanie:
 
 ---
 
-## 📋 Backlog (v2.0+)
+## 🔮 v2.0 — Multi-distro & Dashboard
 
-- Multi-distro: Fedora, Ubuntu, Debian
-- `qpkg.zsh` — detekcja apt/dnf/pacman
+### TUI Dashboard (`qdash`)
+
+Szkielet architektury — stan systemu na żywo + przyciski do akcji, oparte na Gum.
+
+```
+┌─────────────────────────────────────────┐
+│  🖥️ SysQCLI Dashboard · v1.1            │
+│  CPU: 48°C · RAM: 4.2/31GB · GPU: 46°C │
+│  Dysk: 12% · Uptime: 9h                 │
+│─────────────────────────────────────────│
+│  ⚠️ 0 awarii (24h) · 11 aktualizacji     │
+│  ❌ Brak certyfikowanych problemów       │
+│─────────────────────────────────────────│
+│  [S] Skanuj    [N] Napraw               │
+│  [R] Raport    [A] Aktualizuj           │
+│  [C] Czyść     [M] Monitor (btop)       │
+│─────────────────────────────────────────│
+│  [Q] Wyjdź                               │
+└─────────────────────────────────────────┘
+```
+
+Przepływ:
+
+```
+qdash
+  ├── while true:
+  │   ├── 1. Odśwież dane (collectory: CPU, RAM, GPU, dysk, coredumpy, updates)
+  │   ├── 2. Gum: wyrenderuj dashboard (gum style + gum join)
+  │   ├── 3. Gum: menu akcji (gum choose)
+  │   └── 4. Wykonaj akcję
+  │       ├── S → fix --dry-run → pokaż wynik → [T/n]
+  │       ├── N → fix (interaktywny)
+  │       ├── R → fix --report
+  │       ├── A → up (super update)
+  │       ├── C → clean (czyszczenie cache)
+  │       ├── M → qtop (btop)
+  │       └── Q → exit
+  └── end
+```
+
+Pasywne monitorowanie (opcjonalny timer):
+
+```
+qdash --watch 30   # odświeżanie co 30s
+                   # nowy problem → notify-send + podświetlenie w dashboardzie
+```
+
+### Multi-distro
+- `qpkg.zsh` — detekcja apt/dnf/pacman + abstrakcja `qinstall` / `qpkg`
+- Testowane: Arch, Fedora, Ubuntu, Debian
+
+### Internacjonalizacja (kontynuacja v1.5)
 - Instalator językowy: `install.sh` pobiera tylko `messages/$LANG.tar.gz` (nie wszystkie języki)
-- Testy regresyjne dla matcher.py (ciężkie: sztuczne logi + expected matches)
-- Web dashboard? (opcjonalnie, TUI-first)
+
+### Testy regresyjne
+- Sztuczne logi + expected matches dla matcher.py
+- `fix --dry-run --all` jako test regresyjny w CI
 
 ---
 
