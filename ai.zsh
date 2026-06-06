@@ -49,44 +49,179 @@ ai() {
     ollama run "$PROFILE" "INSTRUKCJA: Odpowiadaj wyłącznie po polsku. $q" | tee "$f"
 }
 
-# --- Fix: AI diagnoza (journalctl + coredumpctl + failed services) ---
+# --- Fix: Diagnostyka deterministyczna + certyfikowane wzorce ---
 fix() {
-    _ai_ready || return 1
+    local mode="${1:-full}"
+    [[ "$mode" == "--explain" ]] && { _fix_explain "$2"; return; }
+    [[ "$mode" == "--report" ]] && { _fix_report; return; }
+
     echo -e "\e[33m[ SysQCLI DIAG] Zbieram dane...\e[0m"
 
-    local diag=""
-    local sep="========================================"
-
-    # 1. Failed systemd user services
-    local failed=$(systemctl --user --failed --no-legend 2>/dev/null | head -10)
-    [[ -n "$failed" ]] && diag+="=== USŁUGI USER (failed) ===\n${failed}\n\n"
-
-    # 2. Unikalne błędy z journalctl (bez stack trace, bez szumu)
+    # 1. Collect
+    local diag_data=""
+    # Failed services
+    systemctl --user --failed --no-legend 2>/dev/null | awk '{print "FAILED:"$2}' >> /tmp/sysqcli_diag
+    systemctl --failed --no-legend 2>/dev/null | awk '{print "FAILED:"$2}' >> /tmp/sysqcli_diag
+    # Coredump executables (last 24h)
+    coredumpctl list --since yesterday --no-legend 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i ~ /^\//) {print "CORE:"$i; break}}' >> /tmp/sysqcli_diag
+    # Signal summary
+    coredumpctl list --since yesterday --no-legend 2>/dev/null | awk '{print $6}' | sort -u | while read s; do echo "SIGNAL:$s"; done >> /tmp/sysqcli_diag
+    # Unique errors from journalctl
     local jrnl=$(journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null \
         | grep -vE '^\s*(#|Stack trace|Available|ELF|$)' \
         | grep -vE 'dumped core|░░|\.so\.|pthread_kill|raise|abort|PyEval|Py_Bytes|Py_Run|__libc_start' \
-        | sort -u)
-    [[ -n "$jrnl" ]] && diag+="=== UNIKALNE BŁĘDY JOURNALCTL ===\n${jrnl}\n\n"
+        | sort -u | tr '\n' '|')
+    echo "ERRORS:${jrnl}" >> /tmp/sysqcli_diag
 
-    # 3. Coredumpctl — statystyka (nie pełna lista)
-    local total_cores=$(coredumpctl list --since yesterday --no-legend 2>/dev/null | wc -l)
-    local core_summary=$(coredumpctl list --since yesterday --no-legend 2>/dev/null \
-        | awk '{for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort | uniq -c | sort -rn | head -10)
-    [[ "$total_cores" -gt 0 ]] && diag+="=== COREDUMPY (24h: ${total_cores} razem) ===\n${core_summary}\n\n"
+    # 2. Match
+    local result=$(python3 ~/.config/sysqcli/patterns/matcher.py < /tmp/sysqcli_diag 2>/dev/null)
+    rm -f /tmp/sysqcli_diag
 
-    [[ -z "$diag" ]] && { echo " System czysty — brak błędów."; return 0; }
+    if [[ -z "$result" ]]; then
+        echo -e "\e[1;31m✗ Błąd: nie można uruchomić matcher.py\e[0m"
+        return 1
+    fi
 
-    local prompt="Jesteś diagnostą systemowym Arch Linux. Odpowiadaj tylko po polsku, zwięźle — maksymalnie 5 zdań.
-Poniżej REALNE dane diagnostyczne z systemu użytkownika (NIE hipotetyczne):
-${diag}
-Twoje zadanie:
-1. Wskaż ROOT CAUSE — nazwę usługi/procesu który generuje najwięcej awarii.
-2. Podaj KONKRETNĄ komendę naprawy (np. systemctl disable, pacman -S, edycja pliku).
-3. NIE pisz ogólnych porad typu 'sprawdź logi' czy 'zaktualizuj system'.
-BADŹ KONKRETNY."
+    # 3. Display
+    if [[ "$result" == "NO_MATCH" ]]; then
+        _fix_no_match
+    else
+        _fix_show_match "$result"
+    fi
+}
 
-    echo -e "\e[34m[ AI: mechanik]\e[0m"
-    ollama run "mechanik" "$prompt"
+# --- Helper: wyświetl dopasowane rozwiązanie ---
+_fix_show_match() {
+    local data="$1"
+    local id=$(echo "$data" | grep '^ID:' | cut -d: -f2-)
+    local name=$(echo "$data" | grep '^NAME:' | cut -d: -f2-)
+    local conf=$(echo "$data" | grep '^CONFIDENCE:' | cut -d: -f2-)
+    local risk=$(echo "$data" | grep '^RISK:' | cut -d: -f2-)
+    local expl=$(echo "$data" | grep '^EXPLANATION:' | cut -d: -f2-)
+    local impact=$(echo "$data" | grep '^IMPACT:' | cut -d: -f2-)
+    local action=$(echo "$data" | grep '^ACTION:' | cut -d: -f2-)
+    local rollback=$(echo "$data" | grep '^ROLLBACK:' | cut -d: -f2-)
+    local alt=$(echo "$data" | grep '^ALT:' | cut -d: -f2-)
+
+    # Confidence badge
+    local badge=""
+    case "$conf" in
+        certified)  badge="\e[32m✓ ROZWIĄZANIE CERTYFIKOWANE\e[0m" ;;
+        community)  badge="\e[33m⚠ SUGESTIA SPOŁECZNOŚCI\e[0m" ;;
+        *)          badge="\e[31m⚠ NIECERTYFIKOWANE\e[0m" ;;
+    esac
+
+    # Risk badge
+    local rbadge=""
+    case "$risk" in
+        low)    rbadge="\e[32mniskie\e[0m" ;;
+        medium) rbadge="\e[33mśrednie\e[0m" ;;
+        high)   rbadge="\e[31mwysokie\e[0m" ;;
+        none)   rbadge="brak" ;;
+    esac
+
+    echo -e "\n$badge\n"
+    echo -e "\e[1;36m═══════ $name ═══════\e[0m"
+    echo -e "\e[1;33mPrzyczyna:\e[0m $expl"
+    [[ -n "$impact" ]] && echo -e "\e[1;33mSkutki:\e[0m   $impact"
+    echo ""
+    echo -e "\e[1;32mRozwiązanie:\e[0m $action"
+    [[ -n "$alt" ]] && echo -e "\e[1;34mAlternatywa:\e[0m $alt"
+    echo ""
+    echo -e "  Ryzyko:     $rbadge"
+    echo -e "  Źródło:     $conf"
+    [[ -n "$rollback" ]] && echo -e "  Rollback:   $rollback"
+    echo ""
+
+    # Action prompt
+    if [[ "$conf" == "ai_suggestion" ]]; then
+        echo -e "\e[31m⚠ Rozwiązanie niecertyfikowane — SysQCLI NIE wykona go automatycznie.\e[0m"
+        echo -e "Masz opcje: [R]aport  [D]eleguj  [A]nuluj"
+        read "choice?► "
+    else
+        echo -ne "Wykonać? \e[1m[T/n]\e[0m "
+        read -r confirm
+        if [[ "$confirm" == "T" || "$confirm" == "t" || -z "$confirm" ]]; then
+            echo -e "\e[33mWykonuję: $action\e[0m"
+            eval "$action"
+            local ret=$?
+            if [[ $ret -eq 0 ]]; then
+                echo -e "\e[32m✓ Wykonano pomyślnie.\e[0m"
+            else
+                echo -e "\e[31m✗ Błąd wykonania (kod: $ret)\e[0m"
+                [[ -n "$rollback" ]] && echo -e "\e[33mRollback: $rollback\e[0m"
+            fi
+        else
+            echo "Anulowano."
+        fi
+    fi
+}
+
+# --- Helper: brak dopasowania ---
+_fix_no_match() {
+    echo -e "\e[33m\n⚠ Problem nierozpoznany\e[0m"
+    echo -e "SysQCLI nie posiada certyfikowanej procedury dla tego typu błędu."
+    echo ""
+    echo -e "Dostępne opcje:"
+    echo -e "  \e[1m[R]\e[0maport   — zapisz raport diagnostyczny do pliku"
+    echo -e "  \e[1m[D]\e[0meleguj — przekaż do Goose (jeśli dostępny)"
+    echo -e "  \e[1m[S]\e[0mpołeczność — link do zgłoszeń"
+    echo -e "  \e[1m[A]\e[0mnuluj"
+    echo ""
+    read "choice?► "
+
+    case "$choice" in
+        [Rr])
+            _fix_report
+            ;;
+        [Dd])
+            if command -v goose &>/dev/null; then
+                echo "Deleguję do Goose..."
+                goose "Diagnozuj problemy systemowe: $(journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null | grep -vE 'Stack trace|\.so\.' | sort -u | head -10 | tr '\n' ' ')"
+            else
+                echo "Goose nie jest dostępny."
+            fi
+            ;;
+        [Ss])
+            echo "Zgłoś na: https://github.com/QguAr71/sysqcli/issues"
+            ;;
+        *)
+            echo "Anulowano."
+            ;;
+    esac
+}
+
+# --- Helper: raport diagnostyczny ---
+_fix_report() {
+    local report="$HOME/sysqcli_report_$(date +%Y%m%d_%H%M%S).txt"
+    {
+        echo "═══════ SysQCLI Diagnostic Report ═══════"
+        echo "Data: $(date)"
+        echo "Host: $(hostname)"
+        echo "Kernel: $(uname -r)"
+        echo ""
+        echo "=== FAILED SERVICES ==="
+        systemctl --user --failed --no-legend 2>/dev/null
+        systemctl --failed --no-legend 2>/dev/null
+        echo ""
+        echo "=== COREDUMPS (24h) ==="
+        coredumpctl list --since yesterday --no-legend 2>/dev/null | tail -20
+        echo ""
+        echo "=== JOURNALCTL ERRORS (unique) ==="
+        journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null \
+            | grep -vE '^\s*(#|Stack trace|Available|ELF|$)' \
+            | grep -vE '\.so\.|pthread_kill|raise|abort|PyEval|Py_Bytes|Py_Run|__libc_start' \
+            | sort -u
+    } > "$report"
+    echo -e "\e[32mRaport zapisany: $report\e[0m"
+}
+
+# --- Helper: wyjaśnienie konkretnego błędu ---
+_fix_explain() {
+    local query="$*"
+    [[ -z "$query" ]] && { echo "fix --explain <nazwa usługi lub błędu>"; return 1; }
+    echo -e "\e[34m[ AI: mechanik] Wyjaśniam: $query\e[0m"
+    _ai_ready && ollama run "mechanik" "Wyjaśnij po polsku, zwięźle (max 3 zdania), co oznacza ten błąd systemowy: $query"
 }
 
 # --- Summary: AI podsumowanie dnia ---
