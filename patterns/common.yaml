@@ -1,0 +1,180 @@
+# SysQCLI — Certyfikowane wzorce diagnostyczne
+# v1.0 — Arch Linux + GNOME/Wayland
+# Pola: id, name, category, confidence, triggers, explanation,
+#        impact, recommended_action, alternative, risk, rollback,
+#        references, distros
+# confidence: certified | community (PR-y) | ai_suggestion (cloud)
+# risk: low | medium | high | none (none = tylko informacja)
+
+version: 1
+patterns:
+  # ============================================================
+  # 001 — Qt6 Wayland Tray Crash
+  # ============================================================
+  - id: qt6-wayland-tray
+    name: "arch-update-tray (Qt6 + Wayland)"
+    category: gnome
+    confidence: certified
+    triggers:
+      services:
+        - "arch-update-tray.service"
+      executables:
+        - "python3.14"
+        - "python3"
+      signal: "SIGABRT"
+      error_contains:
+        - "no Qt platform plugin"
+        - "Could not find the Qt platform plugin"
+        - "qt.qpa.plugin"
+    explanation: >
+      Usługa arch-update-tray używa Qt6, które nie wspiera
+      poprawnie system tray na sesji Wayland. Powoduje to
+      cykliczne crashe (SIGABRT) przy każdej próbie startu.
+    impact: >
+      Do kilkudziesięciu coredumpów dziennie, niedziałający
+      applet aktualizacji w tray.
+    recommended_action: >
+      systemctl --user disable --now arch-update-tray.service
+    alternative: >
+      Zainstalować wersję z AUR z backendem xcb lub poczekać
+      na poprawkę w arch-update.
+    risk: low
+    rollback: >
+      systemctl --user enable --now arch-update-tray.service
+    references:
+      - "https://github.com/archlinux/arch-update/issues"
+    distros: [arch, cachyos]
+
+  # ============================================================
+  # 002 — NVIDIA modeset suspend hang
+  # ============================================================
+  - id: nvidia-modeset-suspend
+    name: "NVIDIA — zawieszenie po suspendzie"
+    category: nvidia
+    confidence: certified
+    triggers:
+      services:
+        - "systemd-suspend.service"
+        - "nvidia-suspend.service"
+      error_contains:
+        - "nvidia-modeset"
+        - "NVRM"
+        - "GPU board serial number"
+    explanation: >
+      Sterownik NVIDIA (modeset) niepoprawnie wznawia pracę
+      po suspend-to-RAM. Objawia się czarnym ekranem lub
+      zawieszeniem pulpitu po wybudzeniu.
+    impact: >
+      Niemożność wybudzenia — wymaga twardego resetu.
+    recommended_action: >
+      sudo systemctl restart nvidia-suspend.service nvidia-resume.service nvidia-persistenced.service
+    alternative: >
+      Dodać nvidia.NVreg_EnableMSI=0 do parametrów jądra
+      (Limine: /etc/default/limine) i przebudować initramfs.
+    risk: medium
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/NVIDIA/Tips_and_tricks"
+    distros: [universal]
+
+  # ============================================================
+  # 003 — xdg-desktop-portal (GTK/GNOME) hang
+  # ============================================================
+  - id: xdg-portal-gtk
+    name: "xdg-desktop-portal-gtk — błędy portali"
+    category: gnome
+    confidence: certified
+    triggers:
+      services:
+        - "xdg-desktop-portal-gtk.service"
+        - "xdg-desktop-portal.service"
+      error_contains:
+        - "Failed to start Portal service"
+        - "xdg-desktop-portal"
+        - "portal"
+    explanation: >
+      Usługa portalu GTK/GNOME nie może się poprawnie
+      zainicjalizować. Częsty problem na Wayland po
+      aktualizacjach GNOME lub flatpak.
+    impact: >
+      Nie działające zrzuty ekranu, otwieranie plików,
+      udostępnianie ekranu w aplikacjach.
+    recommended_action: >
+      systemctl --user restart xdg-desktop-portal-gtk.service xdg-desktop-portal.service
+    alternative: >
+      Sprawdź konflikty flatpak: flatpak list --show-details
+      lub restart sesji GNOME.
+    risk: low
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/XDG_Desktop_Portal"
+    distros: [arch, cachyos, fedora]
+
+  # ============================================================
+  # 004 — WirePlumber / PipeWire audio crash
+  # ============================================================
+  - id: wireplumber-failure
+    name: "WirePlumber / PipeWire — awaria audio"
+    category: audio
+    confidence: certified
+    triggers:
+      services:
+        - "wireplumber.service"
+        - "pipewire.service"
+        - "pipewire-pulse.service"
+      executables:
+        - "wireplumber"
+      error_contains:
+        - "wireplumber"
+        - "pipewire"
+        - "ALSA"
+    explanation: >
+      WirePlumber (menedżer sesji PipeWire) uległ awarii.
+      Może to być spowodowane konfliktem z PulseAudio lub
+      błędem w konfiguracji ALSA.
+    impact: >
+      Brak dźwięku, problemy z mikrofonem, crashe aplikacji
+      audio/wideo.
+    recommended_action: >
+      systemctl --user restart wireplumber.service pipewire.service pipewire-pulse.service
+    alternative: >
+      Sprawdź status: pactl info. W ostateczności
+      przełącz na PulseAudio: systemctl --user disable
+      --now wireplumber && systemctl --user start pulseaudio.
+    risk: medium
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/PipeWire"
+    distros: [universal]
+
+  # ============================================================
+  # 005 — Out of Memory (OOM) killer
+  # ============================================================
+  - id: general-oom
+    name: "Out of Memory (OOM) — zabicie procesu"
+    category: system
+    confidence: certified
+    triggers:
+      signal: "SIGKILL"
+      error_contains:
+        - "Out of memory"
+        - "killed process"
+        - "oom-killer"
+        - "Killed process"
+    explanation: >
+      System zabił proces z powodu braku dostępnej pamięci RAM
+      (OOM killer). Najczęściej ofiarą pada przeglądarka lub
+      aplikacja Electron.
+    impact: >
+      Nagłe zamknięcie aplikacji bez ostrzeżenia. Możliwa
+      utrata niezapisanych danych.
+    recommended_action: >
+      free -h && echo 'Rozważ dodanie swap (zram) lub zwiększenie RAM.'
+    alternative: >
+      Sprawdź top/htop w momencie problemu. Użyj zram-generator
+      do kompresji RAM. Ogranicz karty w przeglądarce.
+    risk: none
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/Zram"
+    distros: [universal]
