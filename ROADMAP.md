@@ -111,6 +111,7 @@ Rozwiązanie:
 
 - Multi-distro: Fedora, Ubuntu, Debian
 - `qpkg.zsh` — detekcja apt/dnf/pacman
+- Instalator językowy: `install.sh` pobiera tylko `messages/$LANG.tar.gz` (nie wszystkie języki)
 - Testy regresyjne dla matcher.py (ciężkie: sztuczne logi + expected matches)
 - Web dashboard? (opcjonalnie, TUI-first)
 
