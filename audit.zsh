@@ -69,7 +69,7 @@ preexec() {
     [[ "$SYSCLI_PROFILE" != "laptop" ]] && return
 
     # --- CPU ---
-    local temp=$(sensors 2>/dev/null | grep -m1 -E 'Package id 0|Core 0|edge|temp1' | awk '{v=($4==""?$2:$4); gsub(/[^0-9.]/, "", v); print v}')
+    local temp=$(sensors 2>/dev/null | grep -E 'Package id 0|Core 0|edge|temp1' | grep -v 'N/A' | head -1 | awk '{v=($4==""?$2:$4); gsub(/[^0-9.]/, "", v); print v}')
     [[ -z "$temp" ]] && return
 
     local t_val=${temp%.*}
