@@ -79,19 +79,22 @@ _collect_session_info() {
     command -v nvidia-smi &>/dev/null && echo "CONTEXT:gpu=nvidia" || echo "CONTEXT:gpu=none"
 }
 
-# --- Fix: Diagnostyka deterministyczna + certyfikowane wzorce (v0.2) ---
+# --- Fix: Diagnostyka deterministyczna + certyfikowane wzorce (v0.3) ---
 fix() {
     local mode="${1:-full}"
     local dry_run=0
+    local friendly=0
 
     case "$mode" in
         --dry-run) dry_run=1; mode="full" ;;
+        --friendly) friendly=1; mode="full" ;;
         --explain) _fix_explain "$2"; return ;;
         --report)  _fix_report; return ;;
     esac
 
     echo -e "\e[33m[ SysQCLI DIAG] Zbieram dane...\e[0m"
     [[ $dry_run -eq 1 ]] && echo -e "\e[36m[DRY-RUN] Tryb symulacji — żadne zmiany nie zostaną wykonane.\e[0m"
+    [[ $friendly -eq 1 ]] && echo -e "\e[35m[ Przyjazny] AI przetłumaczy diagnozę na naturalny język...\e[0m"
 
     # 1. Collect (modular)
     local tmpfile="/tmp/sysqcli_diag_$$"
@@ -112,8 +115,114 @@ fix() {
     # 3. Display
     if [[ "$result" == "NO_MATCH" ]]; then
         _fix_no_match
+    elif [[ $friendly -eq 1 ]]; then
+        _fix_show_match_friendly "$result" "$dry_run"
     else
         _fix_show_match "$result" "$dry_run"
+    fi
+}
+
+# --- Helper: przyjazne wyjaśnienie przez 16B translator (v0.3) ---
+_fix_show_match_friendly() {
+    local data="$1"
+    local dry_run="${2:-0}"
+    local name=$(echo "$data" | grep '^NAME:' | cut -d: -f2-)
+    local expl=$(echo "$data" | grep '^EXPLANATION:' | cut -d: -f2-)
+    local impact=$(echo "$data" | grep '^IMPACT:' | cut -d: -f2-)
+    local action=$(echo "$data" | grep '^ACTION:' | cut -d: -f2-)
+    local risk=$(echo "$data" | grep '^RISK:' | cut -d: -f2-)
+    local rollback=$(echo "$data" | grep '^ROLLBACK:' | cut -d: -f2-)
+    local conf=$(echo "$data" | grep '^CONFIDENCE:' | cut -d: -f2-)
+    local alt=$(echo "$data" | grep '^ALT:' | cut -d: -f2-)
+    local score=$(echo "$data" | grep '^SCORE:' | cut -d: -f2-)
+    local kernel=$(echo "$data" | grep '^CONTEXT_KERNEL:' | cut -d: -f2-)
+    local desktop=$(echo "$data" | grep '^CONTEXT_DESKTOP:' | cut -d: -f2-)
+    local session=$(echo "$data" | grep '^CONTEXT_SESSION:' | cut -d: -f2-)
+
+    if ! _ai_ready 2>/dev/null; then
+        echo -e "\e[33m⚠ Ollama offline — pokazuję wersję techniczną.\e[0m"
+        _fix_show_match "$data" "$dry_run"
+        return
+    fi
+
+    echo -e "\n\e[35m[ AI: mechanik] Tłumaczę diagnozę...\e[0m"
+    sleep 0.5
+
+    local prompt="Jesteś modułem językowym SysQCLI 'Mechanik'. Twoje JEDYNE zadanie: przepisz poniższe FAKTY na 2-3 przyjazne zdania po polsku.
+
+FAKTY:
+- Problem: $name
+- Dlaczego: $expl
+- Efekt: $impact
+- System: ${desktop:-GNOME} na ${session:-Wayland}
+
+ZASADY ŻELAZNE (złamanie = porażka):
+1. NIE wymieniaj nazw technicznych (Qt6, SIGABRT) — opisz zjawisko zwykłym językiem
+2. NIE sugeruj rozwiązań — one są już certyfikowane i pokażą się osobno
+3. NIE strasz użytkownika — bądź pomocny, rzeczowy
+4. ODPOWIEDZ SAMYM TEKSTEM — bez znaczników, bez formatowania
+
+ODPOWIEDŹ (2-3 zdania):"
+
+    local translated=$(ollama run "mechanik" "$prompt" 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\x1b\[[0-9;]*[^a-zA-Z]//g; s/\r//g' | tr -s ' \n' | head -3)
+
+    # Badge
+    local badge=""
+    case "$conf" in
+        certified)  badge="\e[32m✓ ROZWIĄZANIE CERTYFIKOWANE\e[0m" ;;
+        community)  badge="\e[33m⚠ SUGESTIA SPOŁECZNOŚCI\e[0m" ;;
+        *)          badge="\e[31m⚠ NIECERTYFIKOWANE\e[0m" ;;
+    esac
+    local rbadge=""
+    case "$risk" in
+        low)    rbadge="\e[32mniskie\e[0m" ;;
+        medium) rbadge="\e[33mśrednie\e[0m" ;;
+        high)   rbadge="\e[31mwysokie\e[0m" ;;
+        none)   rbadge="brak" ;;
+    esac
+
+    echo -e "\n$badge"
+    [[ -n "$score" ]] && echo -e "\e[90m  Score: $score\e[0m"
+    echo -e "\e[1;36m═══════ $name ═══════\e[0m"
+    echo ""
+    [[ -n "$translated" ]] && echo -e "\e[97m$translated\e[0m" || echo -e "$expl"
+    echo ""
+    echo -e "\e[1;32mRozwiązanie:\e[0m $action"
+    [[ -n "$alt" ]] && echo -e "\e[1;34mAlternatywa:\e[0m $alt"
+    echo ""
+    echo -e "  Ryzyko:     $rbadge"
+    echo -e "  Źródło:     $conf"
+    [[ -n "$rollback" ]] && echo -e "  Rollback:   $rollback"
+    echo ""
+
+    # Dry-run
+    if [[ $dry_run -eq 1 ]]; then
+        echo -e "\e[36m[SYMULACJA] Wykonałbym: $action\e[0m"
+        echo -e "\e[36m[SYMULACJA] Status: brak zmian w systemie.\e[0m"
+        return
+    fi
+
+    # Prompt
+    if [[ "$conf" == "ai_suggestion" ]]; then
+        echo -e "\e[31m⚠ Rozwiązanie niecertyfikowane — SysQCLI NIE wykona go automatycznie.\e[0m"
+        echo -e "Masz opcje: [R]aport  [D]eleguj  [A]nuluj"
+        read "choice?► "
+    else
+        echo -ne "Wykonać? \e[1m[T/n]\e[0m "
+        read -r confirm
+        if [[ "$confirm" == "T" || "$confirm" == "t" || -z "$confirm" ]]; then
+            echo -e "\e[33mWykonuję: $action\e[0m"
+            eval "$action"
+            local ret=$?
+            if [[ $ret -eq 0 ]]; then
+                echo -e "\e[32m✓ Wykonano pomyślnie.\e[0m"
+            else
+                echo -e "\e[31m✗ Błąd wykonania (kod: $ret)\e[0m"
+                [[ -n "$rollback" ]] && echo -e "\e[33mRollback: $rollback\e[0m"
+            fi
+        else
+            echo "Anulowano."
+        fi
     fi
 }
 
