@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 # ===============================================================
-# SysQCLI Config v1.0 — INIT (Entry Point)
+# SysQCLI v1.1 — INIT (Entry Point)
+# v1.1: SYSCLI_VERSION bump, Nerd Font migration
 # ===============================================================
 # Kolejność: snapshot  profile  core  deps  rollback  integrity
 #             MODE CHECK  audit  [full: plugins/visuals/ai/monitor]  aliases

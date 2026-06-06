@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 # ===============================================================
-# SysQCLI Config v1.0 — VISUALS (Fastfetch + MOTD + Banner)
+# SysQCLI v1.1 — VISUALS (Fastfetch + MOTD + Banner)
+# v1.1: Nerd Font migration (72 podmian), banner powerline → double-line frame
 # ===============================================================
 
 # --- Fastfetch ---
