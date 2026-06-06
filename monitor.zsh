@@ -20,7 +20,7 @@ qhealth() {
     echo -ne "  CPU: "
     sensors 2>/dev/null | grep -E 'Package id 0|edge|Core 0' | grep -v 'N/A' | head -1 | awk '{print $4}'
     echo -ne " RAM: "
-    free -h | awk '/^Mem:/ {print $3 "/" $2 " (" int($3/$2*100) "%)"}'
+    LANG=C free -h | awk '/^Mem:/ {print $3 "/" $2 " (" int($3/$2*100) "%)"}'
     echo -ne " Dysk: "
     df -h / | awk 'NR==2 {print $3 "/" $2 " (" $5 ")"}'
     echo -ne " Aktualizacje: "
@@ -30,7 +30,7 @@ qhealth() {
     echo -ne "  Uptime: "
     uptime -p | sed 's/up //'
     echo -ne " Governor: "
-    cpupower frequency-info 2>/dev/null | grep "governor" | head -1 | awk -F'"' '{print $2}'
+    cpupower frequency-info 2>/dev/null | awk -F'"' '/The governor/ {print $2; exit}'
 }
 
 # --- qtop, qgpu, qtemp: monitoring ---
