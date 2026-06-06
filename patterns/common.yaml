@@ -30,20 +30,20 @@ patterns:
       Usługa arch-update-tray używa Qt6, które nie wspiera
       poprawnie system tray na sesji Wayland. Powoduje to
       cykliczne crashe (SIGABRT) przy każdej próbie startu.
+      UWAGA: jeśli coredumpy pochodzą od innego UID (gdm/system),
+      potrzebne sudo: systemctl --global disable arch-update-tray.service
     impact: >
       Do kilkudziesięciu coredumpów dziennie, niedziałający
-      applet aktualizacji w tray.
+      applet aktualizacji w tray. Istniejące coredumpy znikną
+      automatycznie po ~24h.
     recommended_action: >
-      systemctl --user disable --now arch-update-tray.service 2>/dev/null
-      systemctl --global disable arch-update-tray.service 2>/dev/null
-      coredumpctl vacuum 2>/dev/null
+      systemctl --user disable --now arch-update-tray.service
     alternative: >
       Zainstalować wersję z AUR z backendem xcb lub poczekać
       na poprawkę w arch-update.
     risk: low
     rollback: >
-      systemctl --user enable --now arch-update-tray.service 2>/dev/null
-      systemctl --global enable arch-update-tray.service 2>/dev/null
+      systemctl --user enable --now arch-update-tray.service
     references:
       - "https://github.com/archlinux/arch-update/issues"
     distros: [arch, cachyos]
