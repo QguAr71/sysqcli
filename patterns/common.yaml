@@ -34,13 +34,16 @@ patterns:
       Do kilkudziesięciu coredumpów dziennie, niedziałający
       applet aktualizacji w tray.
     recommended_action: >
-      systemctl --user disable --now arch-update-tray.service
+      systemctl --user disable --now arch-update-tray.service 2>/dev/null
+      systemctl --global disable arch-update-tray.service 2>/dev/null
+      coredumpctl vacuum 2>/dev/null
     alternative: >
       Zainstalować wersję z AUR z backendem xcb lub poczekać
       na poprawkę w arch-update.
     risk: low
     rollback: >
-      systemctl --user enable --now arch-update-tray.service
+      systemctl --user enable --now arch-update-tray.service 2>/dev/null
+      systemctl --global enable arch-update-tray.service 2>/dev/null
     references:
       - "https://github.com/archlinux/arch-update/issues"
     distros: [arch, cachyos]
