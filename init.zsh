@@ -6,7 +6,7 @@
 #             MODE CHECK  audit  [full: plugins/visuals/ai/monitor]  aliases
 # ===============================================================
 
-export SYSCLI_VERSION="1.0"
+export SYSCLI_VERSION="1.1"
 export SYSCLI_ROOT="${SYSCLI_ROOT:-$HOME/.config/sysqcli}"
 
 # --- 0. USER CONFIG (~/.sysqclirc) ---
