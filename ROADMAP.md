@@ -109,9 +109,28 @@ Rozwiązanie:
 
 ## 🔮 v2.0 — Multi-distro & Dashboard
 
-### TUI Dashboard (`qdash`)
+### TUI Dashboard (`qdash`) — opcjonalny, dla początkujących
 
-Szkielet architektury — stan systemu na żywo + przyciski do akcji, oparte na Gum.
+**Zasada:** Dashboard NIE zastępuje CLI. Jest dodatkową, w pełni opcjonalną warstwą dla użytkowników którzy nie czują się w terminalu. Power userzy zostają przy `fix`, `qhealth`, `up` — tak jak lubią. Wilk syty i owca cała.
+
+Instalator (`install.sh`) przy pierwszym uruchomieniu:
+
+```
+┌─────────────────────────────────────────┐
+│  Wybierz interfejs:                     │
+│                                         │
+│  [1] CLI (domyślny) — dla power userów  │
+│  [2] CLI + Dashboard — z menu wizualnym │
+│      (polecane dla początkujących)      │
+└─────────────────────────────────────────┘
+```
+
+Wybór `[2]`:
+- Instaluje `gum` (zależność)
+- Dodaje alias `qdash`
+- Wyświetla: "Wpisz qdash aby otworzyć dashboard. W każdej chwili możesz też używać zwykłych komend CLI."
+
+Szkielet architektury:
 
 ```
 ┌─────────────────────────────────────────┐
