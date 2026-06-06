@@ -84,13 +84,20 @@ Rozwiązanie:
 
 ---
 
-## 🔜 v1.5 — Community & Release
+## 🔜 v1.5 — Community, Release & i18n
 
 ### Release v1.1 (stabilna)
 - Tag `v1.1` na GitHub
 - GitHub Release z changelogiem (PL + EN)
 - `install.sh` gotowy do `curl | sh`
 - AUR package? (`sysqcli-git`)
+
+### Internacjonalizacja (i18n)
+- Angielski jako język źródłowy (hardcoded w kodzie)
+- `messages/pl.sh` — katalog tłumaczeń na polski
+- `~/.sysqclirc`: `SYSCLI_LANG=pl|en` (domyślnie: `LANG` z systemu)
+- Nowe moduły pisane od razu po angielsku
+- Później: instalator pobiera tylko wybraną wersję językową (gdy przybędzie języków)
 
 ### Community
 - Szablon PR dla nowych wzorców (`patterns/`)
