@@ -226,6 +226,35 @@ ODPOWIEDŹ (2-3 zdania):"
     fi
 }
 
+# --- Helper: delegacja do Goose (v0.4) ---
+_fix_delegate_to_goose() {
+    if ! command -v goose &>/dev/null; then
+        echo -e "\e[33mGoose nie jest dostępny.\e[0m"
+        echo "Zainstaluj: pip install goose-cli"
+        echo "Lub użyj fix --report i przekaż raport ręcznie."
+        return 1
+    fi
+    echo -e "\e[35m[G] Deleguję do Goose z pełnym kontekstem...\e[0m"
+    local ctx="# SysQCLI Diagnostic Report
+System: $(hostname), kernel $(uname -r)
+DE: ${XDG_CURRENT_DESKTOP:-?}, Session: ${XDG_SESSION_TYPE:-?}
+Uptime: $(uptime -p | sed 's/up //')
+GPU: $(command -v nvidia-smi &>/dev/null && echo 'nvidia' || echo 'none')
+
+=== FAILED SERVICES ===
+$(systemctl --user --failed --no-legend 2>/dev/null)
+$(systemctl --failed --no-legend 2>/dev/null)
+
+=== COREDUMPS (24h) ===
+Total: $(coredumpctl list --since yesterday --no-legend 2>/dev/null | wc -l)
+$(coredumpctl list --since yesterday --no-legend 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort | uniq -c | sort -rn | head -10)
+
+=== UNIQUE ERRORS ===
+$(journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null | grep -vE '^\s*(#|Stack trace|Available|ELF|$)' | grep -vE '\.so\.|pthread_kill|raise|abort|PyEval|Py_Bytes|Py_Run|__libc_start' | sort -u)
+"
+    goose "Przeanalizuj ten raport diagnostyczny z systemu Arch Linux. Zidentyfikuj główną przyczynę problemów i zaproponuj konkretne rozwiązanie:\n\n$ctx"
+}
+
 # --- Helper: wyświetl dopasowane rozwiązanie ---
 _fix_show_match() {
     local data="$1"
@@ -280,15 +309,17 @@ _fix_show_match() {
         return
     fi
 
-    # Action prompt
+    # Action prompt with Goose delegate option
     if [[ "$conf" == "ai_suggestion" ]]; then
         echo -e "\e[31m⚠ Rozwiązanie niecertyfikowane — SysQCLI NIE wykona go automatycznie.\e[0m"
         echo -e "Masz opcje: [R]aport  [D]eleguj  [A]nuluj"
         read "choice?► "
     else
-        echo -ne "Wykonać? \e[1m[T/n]\e[0m "
+        echo -ne "Wykonać? \e[1m[T/n/D]\e[0m "
         read -r confirm
-        if [[ "$confirm" == "T" || "$confirm" == "t" || -z "$confirm" ]]; then
+        if [[ "$confirm" == "D" || "$confirm" == "d" ]]; then
+            _fix_delegate_to_goose
+        elif [[ "$confirm" == "T" || "$confirm" == "t" || -z "$confirm" ]]; then
             echo -e "\e[33mWykonuję: $action\e[0m"
             eval "$action"
             local ret=$?
@@ -322,12 +353,7 @@ _fix_no_match() {
             _fix_report
             ;;
         [Dd])
-            if command -v goose &>/dev/null; then
-                echo "Deleguję do Goose..."
-                goose "Diagnozuj problemy systemowe: $(journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null | grep -vE 'Stack trace|\.so\.' | sort -u | head -10 | tr '\n' ' ')"
-            else
-                echo "Goose nie jest dostępny."
-            fi
+            _fix_delegate_to_goose
             ;;
         [Ss])
             echo "Zgłoś na: https://github.com/QguAr71/sysqcli/issues"
