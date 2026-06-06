@@ -254,7 +254,7 @@ $(coredumpctl list --since yesterday --no-legend 2>/dev/null | awk '{for(i=1;i<=
 === UNIQUE ERRORS ===
 $(journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null | grep -vE '^\s*(#|Stack trace|Available|ELF|$)' | grep -vE '\.so\.|pthread_kill|raise|abort|PyEval|Py_Bytes|Py_Run|__libc_start' | sort -u)
 "
-    goose "Przeanalizuj ten raport diagnostyczny z systemu Arch Linux. Zidentyfikuj główną przyczynę problemów i zaproponuj konkretne rozwiązanie:\n\n$ctx"
+    printf "Przeanalizuj ten raport diagnostyczny z systemu Arch Linux. Zidentyfikuj główną przyczynę problemów i zaproponuj konkretne rozwiązanie:\n\n%s" "$ctx" | goose run -i - 2>&1
 }
 
 # --- Helper: wyświetl dopasowane rozwiązanie ---
