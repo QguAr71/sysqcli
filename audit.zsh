@@ -75,6 +75,11 @@ preexec() {
     local t_val=${temp%.*}
     [[ "$t_val" =~ ^[0-9]+$ ]] || return
 
+    # Sync variable with actual governor (catches stale throttle from previous session)
+    local actual_gov=$(</sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null)
+    [[ "$actual_gov" == "powersave" && "$SYSCLI_THROTTLED" != "1" ]] && export SYSCLI_THROTTLED=1
+    [[ "$actual_gov" == "performance" && "$SYSCLI_THROTTLED" == "1" ]] && export SYSCLI_THROTTLED=0
+
     # THROTTLE: >78°C
     if [[ $t_val -gt 78 && "$SYSCLI_THROTTLED" != "1" ]]; then
         sudo -n cpupower frequency-set -g powersave >/dev/null 2>&1
