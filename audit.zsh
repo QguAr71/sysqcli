@@ -10,6 +10,12 @@ GUARD_LOG="$HOME/.cache/sysqcli_guard.log"
 mkdir -p "$(dirname "$AUDIT_LOG")"
 zmodload zsh/datetime 2>/dev/null || true
 
+# --- Thermal: catch stale throttle from previous (crashed) session ---
+if [[ -f "$HOME/.sysqcli_throttled" && "$SYSCLI_THROTTLED" != "1" ]]; then
+    export SYSCLI_THROTTLED=1
+    echo -e "\e[33m[ CPU] Stale throttle detected — będzie automatyczne recovery\e[0m"
+fi
+
 # --- SECURITY GUARD: niebezpieczne wzorce ---
 typeset -gA SYSCLI_DANGEROUS=(
   "rm -rf /"               "usuwa cały system"
@@ -75,20 +81,17 @@ preexec() {
     local t_val=${temp%.*}
     [[ "$t_val" =~ ^[0-9]+$ ]] || return
 
-    # Sync variable with actual governor (catches stale throttle from previous session)
-    local actual_gov=$(</sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2>/dev/null)
-    [[ "$actual_gov" == "powersave" && "$SYSCLI_THROTTLED" != "1" ]] && export SYSCLI_THROTTLED=1
-    [[ "$actual_gov" == "performance" && "$SYSCLI_THROTTLED" == "1" ]] && export SYSCLI_THROTTLED=0
-
     # THROTTLE: >78°C
     if [[ $t_val -gt 78 && "$SYSCLI_THROTTLED" != "1" ]]; then
         sudo -n cpupower frequency-set -g powersave >/dev/null 2>&1
         export SYSCLI_THROTTLED=1
+        touch "$HOME/.sysqcli_throttled"
         echo -e "\e[31m[ CPU] Throttle ON — ${t_val}°C → powersave\e[0m"
     # RECOVER: <65°C
     elif [[ $t_val -lt 65 && "$SYSCLI_THROTTLED" == "1" ]]; then
         sudo -n cpupower frequency-set -g performance >/dev/null 2>&1
         export SYSCLI_THROTTLED=0
+        rm -f "$HOME/.sysqcli_throttled"
         echo -e "\e[32m[ CPU] Performance restored — ${t_val}°C\e[0m"
     # ALERT: 73-78°C
     elif [[ $t_val -gt 73 ]]; then
