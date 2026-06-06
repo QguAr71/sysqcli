@@ -49,13 +49,44 @@ ai() {
     ollama run "$PROFILE" "INSTRUKCJA: Odpowiadaj wyłącznie po polsku. $q" | tee "$f"
 }
 
-# --- Fix: AI diagnoza journalctl ---
+# --- Fix: AI diagnoza (journalctl + coredumpctl + failed services) ---
 fix() {
     _ai_ready || return 1
-    echo -e "\e[33m[ SysQCLI SCAN] Analizuję logi...\e[0m"
-    local logs=$(journalctl -p 3 -xb -n 15 --no-pager 2>/dev/null)
-    [[ -z "$logs" ]] && { echo " Logi czyste."; return 0; }
-    echo -e "BŁĘDY:\n$logs" | ai "Zaproponuj rozwiązanie dla Arch Linux:"
+    echo -e "\e[33m[ SysQCLI DIAG] Zbieram dane...\e[0m"
+
+    local diag=""
+    local sep="========================================"
+
+    # 1. Failed systemd user services
+    local failed=$(systemctl --user --failed --no-legend 2>/dev/null | head -10)
+    [[ -n "$failed" ]] && diag+="=== USŁUGI USER (failed) ===\n${failed}\n\n"
+
+    # 2. Unikalne błędy z journalctl (bez stack trace, bez szumu)
+    local jrnl=$(journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null \
+        | grep -vE '^\s*(#|Stack trace|Available|ELF|$)' \
+        | grep -vE 'dumped core|░░|\.so\.|pthread_kill|raise|abort|PyEval|Py_Bytes|Py_Run|__libc_start' \
+        | sort -u)
+    [[ -n "$jrnl" ]] && diag+="=== UNIKALNE BŁĘDY JOURNALCTL ===\n${jrnl}\n\n"
+
+    # 3. Coredumpctl — statystyka (nie pełna lista)
+    local total_cores=$(coredumpctl list --since yesterday --no-legend 2>/dev/null | wc -l)
+    local core_summary=$(coredumpctl list --since yesterday --no-legend 2>/dev/null \
+        | awk '{for(i=1;i<=NF;i++) if($i ~ /^\//) print $i}' | sort | uniq -c | sort -rn | head -10)
+    [[ "$total_cores" -gt 0 ]] && diag+="=== COREDUMPY (24h: ${total_cores} razem) ===\n${core_summary}\n\n"
+
+    [[ -z "$diag" ]] && { echo " System czysty — brak błędów."; return 0; }
+
+    local prompt="Jesteś diagnostą systemowym Arch Linux. Odpowiadaj tylko po polsku, zwięźle — maksymalnie 5 zdań.
+Poniżej REALNE dane diagnostyczne z systemu użytkownika (NIE hipotetyczne):
+${diag}
+Twoje zadanie:
+1. Wskaż ROOT CAUSE — nazwę usługi/procesu który generuje najwięcej awarii.
+2. Podaj KONKRETNĄ komendę naprawy (np. systemctl disable, pacman -S, edycja pliku).
+3. NIE pisz ogólnych porad typu 'sprawdź logi' czy 'zaktualizuj system'.
+BADŹ KONKRETNY."
+
+    echo -e "\e[34m[ AI: mechanik]\e[0m"
+    ollama run "mechanik" "$prompt"
 }
 
 # --- Summary: AI podsumowanie dnia ---
