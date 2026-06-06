@@ -19,8 +19,27 @@ q_snapshot() {
     fi
 }
 
-# --- RESTORE (ostatni snapshot) ---
-qrestore() { q_restore_last }
+# --- RESTORE (z FZF do wyboru snapshota) ---
+qrestore() {
+    local files=($(ls -1t "$ROLLBACK_DIR"/*.tar.gz 2>/dev/null))
+    [[ ${#files} -eq 0 ]] && { echo " Brak snapshotów."; return 1; }
+
+    local chosen
+    if (( ${#files} == 1 )); then
+        chosen="${files[1]}"
+    else
+        chosen=$(for f in "${files[@]}"; do
+            echo "$(basename $f .tar.gz)"
+        done | fzf --height 40% --layout=reverse --header="Wybierz snapshot do przywrócenia")
+        [[ -z "$chosen" ]] && return 0
+        chosen="$ROLLBACK_DIR/${chosen}.tar.gz"
+    fi
+
+    echo "Przywracam: $(basename $chosen .tar.gz)..."
+    tar -xzf "$chosen" -C "$HOME/" 2>/dev/null && \
+        echo "\uf1b8 Przywrócono: $(basename $chosen)" || \
+        echo " Błąd przywracania"
+}
 q_restore_last() {
     local last=$(ls -t "$ROLLBACK_DIR"/*.tar.gz 2>/dev/null | head -1)
     [[ -z "$last" ]] && { echo " Brak snapshotów."; return 1; }
