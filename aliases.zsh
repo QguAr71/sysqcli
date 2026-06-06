@@ -37,7 +37,7 @@ alias -g NE='2>/dev/null'
 qsafe()      { touch "$HOME/.sysqcli_safe" && echo "\uf0c3 Safe mode — restart ZSH aby aktywować" && exec zsh }
 qunsafe()    { rm -f "$HOME/.sysqcli_safe" && echo " Full mode — restart ZSH aby aktywować" && exec zsh }
 qimmutable() { SYSCLI_MODE=immutable exec zsh }
-qfull()      { SYSCLI_MODE=full exec zsh }
+qfull()      { rm -f "$HOME/.sysqcli_safe" && SYSCLI_MODE=full exec zsh }
 szs()        { source "$SYSCLI_ROOT/init.zsh" && clear && echo " SysQCLI przeładowany." }
 
 # ═══════════════════════════════════════════════════════════════
