@@ -1,7 +1,8 @@
 #!/usr/bin/env zsh
 # ===============================================================
-# SysQCLI v1.1 — VISUALS (Fastfetch + MOTD + Banner)
+# SysQCLI v1.2 — VISUALS (Fastfetch + MOTD + Banner)
 # v1.1: Nerd Font migration (72 podmian), banner powerline → double-line frame
+# v1.2: Banner czyta .sysqcli_last_fix — nie straszy po udanej naprawie
 # ===============================================================
 
 # --- Fastfetch ---
@@ -30,7 +31,19 @@ sysqcli_motd() {
 
     # Coredumps
     local cores=$(coredumpctl list --since "yesterday" --no-legend 2>/dev/null | wc -l)
-    [[ $cores -gt 0 ]] && echo -e "\e[33m $cores awarii od wczoraj — wpisz 'fix'\e[0m"
+    if [[ $cores -gt 0 ]]; then
+        if [[ -f "$HOME/.sysqcli_last_fix" ]]; then
+            local last_fix=$(cat "$HOME/.sysqcli_last_fix")
+            local now=$(date +%s)
+            if (( now - last_fix < 86400 )); then
+                echo -e "\e[90m Fix zastosowany. $cores coredumpy historyczne (znikną do ~24h).\e[0m"
+            else
+                echo -e "\e[33m $cores awarii od wczoraj — wpisz 'fix'\e[0m"
+            fi
+        else
+            echo -e "\e[33m $cores awarii od wczoraj — wpisz 'fix'\e[0m"
+        fi
+    fi
 
     # RAM warning at start
     local mem_used=$(free | awk '/^Mem:/ {print $3}')

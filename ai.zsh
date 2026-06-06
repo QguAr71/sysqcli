@@ -222,6 +222,7 @@ ODPOWIEDŹ (2-3 zdania):"
             local ret=$?
             if [[ $ret -eq 0 ]]; then
                 echo -e "\e[32m✓ Wykonano pomyślnie.\e[0m"
+                date +%s > "$HOME/.sysqcli_last_fix"
             else
                 echo -e "\e[31m✗ Błąd wykonania (kod: $ret)\e[0m"
                 [[ -n "$rollback" ]] && echo -e "\e[33mRollback: $rollback\e[0m"
@@ -331,6 +332,7 @@ _fix_show_match() {
             local ret=$?
             if [[ $ret -eq 0 ]]; then
                 echo -e "\e[32m✓ Wykonano pomyślnie.\e[0m"
+                date +%s > "$HOME/.sysqcli_last_fix"
             else
                 echo -e "\e[31m✗ Błąd wykonania (kod: $ret)\e[0m"
                 [[ -n "$rollback" ]] && echo -e "\e[33mRollback: $rollback\e[0m"
@@ -432,3 +434,44 @@ alias sii='ai'         # DeepSeek Coder
 
 # --- Purge cache przy starcie ---
 _ai_cache_purge
+
+# --- SYSQ SHADOW AUDIT (Shadow QC Pipeline) ---
+
+function gem() {
+    # Kolory ANSI dla UI skryptu
+    local CLR_BOLD="\e[1;37m"
+    local CLR_CYAN="\e[0;36m"
+    local CLR_GOLD="\e[0;33m"
+    local CLR_RESET="\e[0m"
+
+    # 1. Sprawdzenie czy jesteśmy w repozytorium GIT
+    if ! git rev-parse --is-inside-work-tree > /dev/null 2>&1; then
+        echo -e "${CLR_GOLD}[!] Błąd: Nie jesteś w repozytorium Git.${CLR_RESET}"
+        return 1
+    fi
+
+    # 2. Pobranie zmian (staged + unstaged)
+    local git_diff=$(git diff HEAD)
+
+    # 3. Przerwanie jeśli brak zmian
+    if [[ -z "$git_diff" ]]; then
+        echo -e "${CLR_CYAN}[i] Brak zmian do przeanalizowania w git diff HEAD.${CLR_RESET}"
+        return 0
+    fi
+
+    echo -e "${CLR_BOLD}>>> URUCHAMIANIE SHADOW QC (Asymetryczna Kontrola Jakości)...${CLR_RESET}"
+
+    # 4. Potok do Gemini z instrukcjami sędziowskimi
+    echo "$git_diff" | gemini "Działaj jako Shadow QC (Cichy Inspektor). Analizujesz 'git diff' wygenerowany przez innego agenta AI na systemie Arch Linux (CachyOS). 
+Twoja ocena musi być chłodna i techniczna. Szukaj: błędnych flag basha, niebezpiecznych operacji na plikach, braku obsługi błędów, halucynacji w ścieżkach systemowych oraz luk bezpieczeństwa.
+
+FORMAT WYNIKU (ŚCIŚLE PRZESTRZEGAĆ):
+- Jeśli kod jest bezpieczny i poprawny: Zwróć wyłącznie '✓ KOD STABILNY' (kolor zielony w terminalu).
+- Jeśli znajdziesz błędy: Zacznij od 'STATUS: REJECTED' i wypunktuj maksymalnie 3 najkrytyczniejsze uwagi techniczne po polsku.
+
+DIFF DO ANALIZY:
+\$(cat)" 
+}
+
+# Alias dla wygody
+alias gem='gem'
