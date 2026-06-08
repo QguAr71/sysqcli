@@ -8,7 +8,7 @@ local host=$(hostname)
 case "$host" in
     sysqcli*|laptop*|SysQ*)
         export SYSCLI_PROFILE="laptop"
-        export SYSCLI_POWER="eco"
+        export SYSCLI_POWER="normal"
         ;;
     desktop*|ws*)
         export SYSCLI_PROFILE="desktop"
