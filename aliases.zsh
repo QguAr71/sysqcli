@@ -142,35 +142,33 @@ fedit() {
 }
 
 # ═══════════════════════════════════════════════════════════════
-# ECHO — Lazarus Kernel + Goose (v3.0, 2026-06-12)
+# ECHO — Lazarus Kernel + Goose (v4.0, 2026-06-14)
+# Banner: natywny przez MCP (kernel.banner prompt). echo-wake-lazarus usunięty.
 # ═══════════════════════════════════════════════════════════════
 
-# eho — full production pipeline (echo-wake-lazarus + goose)
+# eho — full production pipeline (daemons + goose)
 alias eho='\
-  echo-wake-lazarus; \
   systemctl --user is-active lazarusd >/dev/null || systemctl --user start lazarusd; \
   goose session'
 
 # eho1 — minimal (no daemons, developer only) + lazarus-agent lifecycle
-alias eho1='echo-wake-lazarus; GOOSE_MOIM_MESSAGE_FILE="" lazarus-agent goose session --name eho1 --no-profile --with-builtin developer'
+alias eho1='GOOSE_MOIM_MESSAGE_FILE="" lazarus-agent goose session --name eho1 --no-profile --with-builtin developer'
 
 # eho2 — developer + TOM
 alias eho2='goose session --name test2 --no-profile --with-builtin developer,tom'
 
-# eho3 — daemons + named session (no wake banner)
+# eho3 — daemons + named session
 alias eho3='\
   systemctl --user is-active lazarusd >/dev/null || systemctl --user start lazarusd; \
   goose session --name test3'
 
-# eho4 — echo-wake-lazarus + daemons + session
+# eho4 — daemons + session
 alias eho4='\
-  echo-wake-lazarus; \
   systemctl --user is-active lazarusd >/dev/null || systemctl --user start lazarusd; \
   goose session --name test4'
 
-# eho5 — full: wake + daemons + session
+# eho5 — daemons + session
 alias eho5='\
-  echo-wake-lazarus; \
   systemctl --user is-active lazarusd >/dev/null || systemctl --user start lazarusd; \
   goose session --name test5'
 
