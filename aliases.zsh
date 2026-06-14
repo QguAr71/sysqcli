@@ -152,7 +152,7 @@ fedit() {
 alias eho='goose session --name echo --with-builtin developer'
 
 # eho1 — pełna ścieżka (lazarus-agent + pidfd lifecycle + MCP)
-alias eho1='lazarus-agent goose session --name echo --with-builtin developer'
+alias eho1='~/projects/lazarus/scripts/deploy.sh && lazarus-agent goose session --name echo --with-builtin developer'
 
 # eho2 — developer + TOM
 alias eho2='goose session --name test2 --no-profile --with-builtin developer,tom'
