@@ -142,17 +142,17 @@ fedit() {
 }
 
 # ═══════════════════════════════════════════════════════════════
-# ECHO — Lazarus Kernel + Goose (v4.0, 2026-06-14)
-# Banner: natywny przez MCP (kernel.banner prompt). echo-wake-lazarus usunięty.
+# ECHO — Lazarus Kernel + Goose (v5.0, 2026-06-14)
+# Banner: natywny przez MCP (kernel.banner prompt)
+# eho  = full pipeline: lazarus-agent → pidfd → MCP → Palace/Vault
+# eho1 = simplified: direct goose (no pidfd, MCP via config)
 # ═══════════════════════════════════════════════════════════════
 
-# eho — full production pipeline (daemons + goose)
-alias eho='\
-  systemctl --user is-active lazarusd >/dev/null || systemctl --user start lazarusd; \
-  goose session'
+# eho — pełna ścieżka (lazarus-agent + pidfd lifecycle + MCP)
+alias eho='lazarus-agent goose session --name echo --with-builtin developer'
 
-# eho1 — minimal (no daemons, developer only) + lazarus-agent lifecycle
-alias eho1='GOOSE_MOIM_MESSAGE_FILE="" lazarus-agent goose session --name eho1 --no-profile --with-builtin developer'
+# eho1 — uproszczona (bez lazarus-agent, bez pidfd. MCP przez config)
+alias eho1='goose session --name echo --with-builtin developer'
 
 # eho2 — developer + TOM
 alias eho2='goose session --name test2 --no-profile --with-builtin developer,tom'
