@@ -149,6 +149,7 @@ fedit() {
 # ═══════════════════════════════════════════════════════════════
 
 # eho — uproszczona (bez lazarus-agent, bez pidfd. MCP przez config)
+# eho — fallback: deepseek-chat (V3) bez proxy (używaj eho1 dla v4-pro)
 alias eho='goose session --name echo --with-builtin developer'
 
 # eho1 — pełna ścieżka (lazarus-agent + pidfd lifecycle + MCP)
@@ -171,6 +172,9 @@ alias eho4='\
 alias eho5='\
   systemctl --user is-active lazarusd >/dev/null || systemctl --user start lazarusd; \
   goose session --name test5'
+
+# eho6 — fallback: deepseek-chat (V3) bez proxy, bez thinking mode
+alias eho6='env GOOSE_PROVIDER=custom_deepseek GOOSE_MODEL=deepseek-chat goose session --name backup --with-builtin developer'
 
 # yazi
 y() {
