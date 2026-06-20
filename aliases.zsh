@@ -148,9 +148,10 @@ fedit() {
 # eho1 = full pipeline: lazarus-agent → pidfd → MCP → Palace/Vault
 # ═══════════════════════════════════════════════════════════════
 
-# eho — uproszczona (bez lazarus-agent, bez pidfd. MCP przez config)
-# eho — fallback: deepseek-chat (V3) bez proxy (używaj eho1 dla v4-pro)
-alias eho='goose session --name echo --with-builtin developer'
+# eho — z Session Memory Pipeline (domyślnie)
+# eho0 — awaryjny fallback (bez pipeline, legacy session_save)
+alias eho='SESSION_MEMORY_PIPELINE=1 goose session --name echo --with-builtin developer'
+alias eho0='SESSION_MEMORY_PIPELINE=0 goose session --name echo --with-builtin developer'
 
 # eho1 — pełna ścieżka (lazarus-agent + pidfd lifecycle + MCP)
 alias eho1='~/projects/lazarus/scripts/deploy.sh && lazarus-agent goose session --name echo --with-builtin developer --with-streamable-http-extension "http://127.0.0.1:9595/mcp"'
