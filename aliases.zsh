@@ -142,40 +142,22 @@ fedit() {
 }
 
 # ═══════════════════════════════════════════════════════════════
-# ECHO — Lazarus Kernel + Goose (v5.0, 2026-06-14)
+# ECHO — Lazarus Kernel + Goose (v5.1, 2026-06-20)
 # Banner: natywny przez MCP (kernel.banner prompt)
-# eho  = simplified: direct goose (no pidfd, MCP via config)
-# eho1 = full pipeline: lazarus-agent → pidfd → MCP → Palace/Vault
+# Session Memory Pipeline: eho (ON), eho0 (OFF)
 # ═══════════════════════════════════════════════════════════════
 
-# eho — z Session Memory Pipeline (domyślnie)
-# eho0 — awaryjny fallback (bez pipeline, legacy session_save)
+# eho — główny: Session Memory Pipeline ON (domyślnie)
 alias eho='SESSION_MEMORY_PIPELINE=1 goose session --name echo --with-builtin developer'
+
+# eho0 — awaryjny: fallback do legacy session_save (bez pipeline)
 alias eho0='SESSION_MEMORY_PIPELINE=0 goose session --name echo --with-builtin developer'
 
-# eho1 — pełna ścieżka (lazarus-agent + pidfd lifecycle + MCP)
+# eho1 — pełna ścieżka: lazarus-agent + pidfd lifecycle + MCP
 alias eho1='~/projects/lazarus/scripts/deploy.sh && lazarus-agent goose session --name echo --with-builtin developer --with-streamable-http-extension "http://127.0.0.1:9595/mcp"'
 
-# eho2 — developer + TOM
-alias eho2='goose session --name test2 --no-profile --with-builtin developer,tom'
-
-# eho3 — daemons + named session
-alias eho3='\
-  systemctl --user is-active lazarusd >/dev/null || systemctl --user start lazarusd; \
-  goose session --name test3'
-
-# eho4 — daemons + session
-alias eho4='\
-  systemctl --user is-active lazarusd >/dev/null || systemctl --user start lazarusd; \
-  goose session --name test4'
-
-# eho5 — daemons + session
-alias eho5='\
-  systemctl --user is-active lazarusd >/dev/null || systemctl --user start lazarusd; \
-  goose session --name test5'
-
-# eho6 — fallback: deepseek-chat (V3) bez proxy, bez thinking mode
-alias eho6='env GOOSE_PROVIDER=custom_deepseek GOOSE_MODEL=deepseek-chat goose session --name backup --with-builtin developer'
+# eho-v3 — fallback: deepseek-chat (V3) bez proxy
+alias eho-v3='env GOOSE_PROVIDER=custom_deepseek GOOSE_MODEL=deepseek-chat goose session --name backup --with-builtin developer'
 
 # yazi
 y() {
