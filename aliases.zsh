@@ -159,6 +159,9 @@ alias eho1='~/projects/lazarus/scripts/deploy.sh && lazarus-agent goose session 
 # eho-v3 — fallback: deepseek-chat (V3) bez proxy
 alias eho-v3='env GOOSE_PROVIDER=custom_deepseek GOOSE_MODEL=deepseek-chat goose session --name backup --with-builtin developer'
 
+# eho push — przepycha ręczne edycje goose-config → manifest + deploy
+alias eho-push='lazarus mirror push && lazarus mirror status'
+
 # yazi
 y() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
