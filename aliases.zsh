@@ -142,25 +142,20 @@ fedit() {
 }
 
 # ═══════════════════════════════════════════════════════════════
-# ECHO — Lazarus Kernel + Goose (v5.1, 2026-06-20)
-# Banner: natywny przez MCP (kernel.banner prompt)
-# Session Memory Pipeline: eho (ON), eho0 (OFF)
+# ECHO — Lazarus Kernel + Goose (v5.1, 2026-06-22)
+# eho  = full pipeline: lazarus-agent → pidfd → MCP → Palace/Vault
+# eho1 = sandbox (DEV-ONLY): lazarus-agent + osobny Wing
+# eho3 = fallback: goły goose, działa zawsze gdy lazarusd padnie
 # ═══════════════════════════════════════════════════════════════
 
-# eho — główny: Session Memory Pipeline ON (domyślnie)
-alias eho='SESSION_MEMORY_PIPELINE=1 goose session --name echo --with-builtin developer'
+# eho — pełna ścieżka (lazarus-agent + pidfd lifecycle + MCP)
+alias eho='lazarus-agent goose session --name echo --with-builtin developer'
 
-# eho0 — awaryjny: fallback do legacy session_save (bez pipeline)
-alias eho0='SESSION_MEMORY_PIPELINE=0 goose session --name echo --with-builtin developer'
+# eho1 — sandbox (DEV-ONLY): lazarus-agent + osobny Wing=sandbox + osobny klucz DeepSeek + ukryte tool outputy
+alias eho1='GOOSE_PROVIDER=deepseek-v4-sandbox GOOSE_MODEL=deepseek-v4-pro LAZARUS_WING=sandbox GOOSE_CLI_MIN_PRIORITY=0.9 lazarus-agent goose session --name echo --with-builtin developer'
 
-# eho1 — pełna ścieżka: lazarus-agent + pidfd lifecycle + MCP
-alias eho1='~/projects/lazarus/scripts/deploy.sh && lazarus-agent goose session --name echo --with-builtin developer --with-streamable-http-extension "http://127.0.0.1:9595/mcp"'
-
-# eho-v3 — fallback: deepseek-chat (V3) bez proxy
-alias eho-v3='env GOOSE_PROVIDER=custom_deepseek GOOSE_MODEL=deepseek-chat goose session --name backup --with-builtin developer'
-
-# eho push — przepycha ręczne edycje goose-config → manifest + deploy
-alias eho-push='lazarus mirror push && lazarus mirror status'
+# eho3 — fallback: goły goose bez Lazarusa (gdy lazarusd padnie)
+alias eho3='goose session --name test3 --with-builtin developer'
 
 # yazi
 y() {
