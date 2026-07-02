@@ -142,20 +142,26 @@ fedit() {
 }
 
 # ═══════════════════════════════════════════════════════════════
-# ECHO — Lazarus Kernel + Goose (v5.1, 2026-06-22)
-# eho  = full pipeline: lazarus-agent → pidfd → MCP → Palace/Vault
-# eho1 = sandbox (DEV-ONLY): lazarus-agent + osobny Wing
-# eho3 = fallback: goły goose, działa zawsze gdy lazarusd padnie
+# SYSQ — Lazarus Kernel + Goose (v1.15, 2026-06-27)
+# sysq  = full pipeline: lazarus-agent → pidfd → MCP → Citadel/Vault
+# dev   = sandbox (DEV-ONLY): lazarus-agent + osobny Wing
+# goose = fallback: goły goose, działa zawsze gdy lazarusd padnie
 # ═══════════════════════════════════════════════════════════════
 
-# eho — pełna ścieżka (lazarus-agent + pidfd lifecycle + MCP)
-alias eho='lazarus-agent goose session --name echo --with-builtin developer'
+# sysq — pełna ścieżka (lazarus-agent + pidfd lifecycle + MCP)
+# Automatycznie aktualizuje port MCP w goose config przed startem.
+sysq() {
+    local port=$(cat ~/.cache/lazarus/mcp_port 2>/dev/null | tr -d '\n')
+    port="${port:-9595}"
+    sed -i "s|uri: http://localhost:[0-9]\+/mcp|uri: http://localhost:${port}/mcp|" ~/.config/goose/config.yaml
+    lazarus-agent goose session --name sysq --with-builtin developer
+}
 
-# eho1 — sandbox (DEV-ONLY): lazarus-agent + osobny Wing=sandbox + osobny klucz DeepSeek + ukryte tool outputy
-alias eho1='GOOSE_PROVIDER=deepseek-v4-sandbox GOOSE_MODEL=deepseek-v4-pro LAZARUS_WING=sandbox GOOSE_CLI_MIN_PRIORITY=0.9 lazarus-agent goose session --name echo --with-builtin developer'
+# dev — sandbox (DEV-ONLY): osobny lazarusd :9596 + osobny config ~/.config/goose-sandbox
+alias dev='GOOSE_PROVIDER=deepseek-v4-sandbox GOOSE_MODEL=deepseek-v4-pro GOOSE_CONFIG_DIR=$HOME/.config/goose-sandbox LAZARUS_SUPERWING=dev LAZARUS_WING=default GOOSE_CLI_MIN_PRIORITY=0.9 lazarus-agent goose session --name dev --with-builtin developer'
 
-# eho3 — fallback: goły goose bez Lazarusa (gdy lazarusd padnie)
-alias eho3='goose session --name test3 --with-builtin developer'
+# eho — fallback: goły goose z sandbox providerem, bez Lazarusa (gdy lazarusd padnie)
+alias eho='GOOSE_CONFIG_DIR=$HOME/.config/goose-eho goose session --name eho --with-builtin developer'
 
 # yazi
 y() {

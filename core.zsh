@@ -17,7 +17,7 @@ export BAT_THEME="gruvbox-dark"
 export RUSTFLAGS="-C target-cpu=native"
 
 # PATH
-export PATH="$HOME/bin:/usr/local/bin:$HOME/.cargo/bin:$PATH"
+export PATH="$HOME/bin:/usr/local/bin:$HOME/.cargo/bin:$SYSCLI_ROOT/scripts:$PATH"
 
 # FZF — SysQCLI Frosted Mint color scheme
 export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git --exclude .cache'
