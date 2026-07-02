@@ -303,3 +303,247 @@ patterns:
       - "https://wiki.archlinux.org/title/GDM"
       - "https://wiki.archlinux.org/title/GNOME"
     distros: [arch, cachyos, fedora]
+
+  # ============================================================
+  # 007 (ciąg dalszy) — Flatpak portal conflicts
+  # ============================================================
+  - id: flatpak-portal-conflict
+    name: "Flatpak — konflikt portali (xdg-desktop-portal)"
+    category: gnome
+    confidence: certified
+    triggers:
+      error_contains:
+        - "flatpak"
+        - "portal"
+        - "xdg-desktop-portal"
+        - "xdg-desktop-portal-gtk"
+        - "xdg-desktop-portal-gnome"
+        - "Failed to start Portal service"
+        - "Name taken"
+        - "already owned"
+        - "conflict"
+        - "duplicate"
+      services:
+        - "xdg-desktop-portal.service"
+        - "xdg-desktop-portal-gtk.service"
+        - "xdg-desktop-portal-gnome.service"
+    explanation: >
+      Konflikt między portalem GTK a portalem GNOME — oba
+      próbują przejąć tę samą nazwę na D-Bus. Flatpak wymaga
+      dokładnie jednego backendu portalu. Częste po instalacji
+      aplikacji flatpak które ciągną własne zależności.
+    impact: >
+      Nie działające zrzuty ekranu, otwieranie plików,
+      udostępnianie ekranu. Aplikacje flatpak nie mogą
+      uzyskać dostępu do zasobów systemowych.
+    recommended_action: >
+      systemctl --user restart xdg-desktop-portal-gnome.service
+    alternative: >
+      Jeśli używasz GNOME: odinstaluj xdg-desktop-portal-gtk.
+      Jeśli używasz innego DE: odinstaluj xdg-desktop-portal-gnome.
+      Sprawdź: systemctl --user list-units | grep xdg-desktop-portal
+    risk: low
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/XDG_Desktop_Portal"
+    distros: [arch, cachyos, fedora]
+
+  # ============================================================
+  # 009 — GPU fallback to llvmpipe
+  # ============================================================
+  - id: gpu-llvmpipe-fallback
+    name: "GPU — fallback do llvmpipe (brak akceleracji)"
+    category: nvidia
+    confidence: certified
+    triggers:
+      error_contains:
+        - "llvmpipe"
+        - "software rasterizer"
+        - "llvm"
+        - "OpenGL renderer string"
+        - "fallback"
+        - "failed to load"
+        - "nvidia"
+        - "nouveau"
+        - "modeset"
+        - "GLX"
+        - "EGL"
+        - "renderer"
+    explanation: >
+      GNOME/GPU używa programowego renderowania (llvmpipe)
+      zamiast sprzętowego przyspieszenia NVIDIA. Oznacza to
+      że sterownik NVIDIA nie został załadowany lub moduły
+      nie pasują do kernela. Sprawdź czy nvidia-smi działa.
+    impact: >
+      Bardzo niska wydajność graficzna, animacje GNOME
+      szarpią, gry i aplikacje 3D nie działają.
+    recommended_action: >
+      sudo mkinitcpio -P && sudo reboot
+    alternative: >
+      Sprawdź czy moduły są załadowane: lsmod | grep nvidia.
+      Jeśli nie — sudo modprobe nvidia && sudo systemctl
+      restart gdm. Jeśli problem po aktualizacji — pattern
+      007 (module mismatch) może być trafniejszy.
+    risk: low
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/NVIDIA"
+    distros: [arch, cachyos]
+
+  # ============================================================
+  # 010 — DBus session timeout
+  # ============================================================
+  - id: dbus-session-timeout
+    name: "D-Bus — timeout sesji (aplikacje nie odpowiadają)"
+    category: system
+    confidence: certified
+    triggers:
+      error_contains:
+        - "dbus"
+        - "D-Bus"
+        - "timeout"
+        - "connection refused"
+        - "session bus"
+        - "dbus-daemon"
+        - "Failed to connect"
+        - "message bus"
+        - "reply timeout"
+        - "method call timeout"
+    explanation: >
+      Aplikacje nie mogą połączyć się z sesyjną magistralą
+      D-Bus. Często po wybudzeniu z suspendu lub przy
+      przeciążonej sesji GNOME. D-Bus broker nie odpowiada
+      na żądania w oczekiwanym czasie.
+    impact: >
+      Aplikacje nie startują, gnome-shell nie reaguje na
+      kliknięcia, powiadomienia nie działają.
+    recommended_action: >
+      systemctl --user restart dbus-broker.service
+    alternative: >
+      Jeśli problem powtarza się często: sprawdź logi
+      journalctl --user -u dbus-broker.service. Możliwe
+      że jakaś aplikacja blokuje magistralę (np. flatpak).
+      W ostateczności: wyloguj się i zaloguj ponownie.
+    risk: low
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/D-Bus"
+    distros: [universal]
+
+  # ============================================================
+  # 011 — PulseAudio ↔ PipeWire conflict
+  # ============================================================
+  - id: pulseaudio-pipewire-conflict
+    name: "Audio — konflikt PulseAudio z PipeWire"
+    category: audio
+    confidence: certified
+    triggers:
+      error_contains:
+        - "pulseaudio"
+        - "pipewire"
+        - "pipewire-pulse"
+        - "already in use"
+        - "Address already in use"
+        - "cannot bind"
+        - "socket"
+        - "audio"
+        - "pulse"
+        - "conflict"
+      services:
+        - "pulseaudio.service"
+        - "pipewire-pulse.service"
+    explanation: >
+      Zarówno PulseAudio jak i PipeWire-Pulse próbują zająć
+      ten sam socket audio. Dzieje się to gdy obie usługi
+      są aktywne jednocześnie — PipeWire powinien zastąpić
+      PulseAudio, nie działać obok niego.
+    impact: >
+      Brak dźwięku, aplikacje nie widzą urządzeń audio,
+      trzaski i przerywanie dźwięku.
+    recommended_action: >
+      systemctl --user disable --now pulseaudio.service pulseaudio.socket 2>/dev/null; systemctl --user restart pipewire-pulse.service
+    alternative: >
+      Sprawdź która usługa działa: pactl info | grep "Server Name".
+      Jeśli PulseAudio — maskuj pulseaudio i przełącz na PipeWire.
+      Jeśli już PipeWire — sprawdź czy pulseaudio nie jest
+      uruchomione jako proces użytkownika (nie systemd).
+    risk: low
+    rollback: >
+      systemctl --user unmask pulseaudio && systemctl --user start pulseaudio
+    references:
+      - "https://wiki.archlinux.org/title/PipeWire#PulseAudio"
+    distros: [arch, cachyos, fedora]
+
+  # ============================================================
+  # 012 — /tmp full (tmpfs overflow)
+  # ============================================================
+  - id: tmpfs-full
+    name: "/tmp — tmpfs przepełniony"
+    category: system
+    confidence: certified
+    triggers:
+      error_contains:
+        - "No space left on device"
+        - "disk full"
+        - "no space"
+        - "/tmp"
+        - "tmpfs"
+        - "write error"
+        - "cannot write"
+        - "ENOSPC"
+        - "out of space"
+    explanation: >
+      Partycja /tmp (tmpfs w RAM) jest pełna. tmpfs ma
+      domyślnie rozmiar połowy dostępnego RAM. Duże pliki
+      tymczasowe (kompilacje, vscode, pacman) mogą ją
+      szybko zapełnić.
+    impact: >
+      Kompilacje się nie udają, aplikacje nie mogą tworzyć
+      plików tymczasowych, pacman nie może pobrać pakietów.
+    recommended_action: >
+      sudo rm -rf /tmp/* && echo "Wyczyszczono /tmp"
+    alternative: >
+      Sprawdź co zajmuje miejsce: du -sh /tmp/* | sort -h | tail -10.
+      Dla stałego rozwiązania: zwiększ tmpfs w /etc/fstab.
+      Lub utwórz /tmp na dysku jeśli RAM jest ograniczony.
+    risk: none
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/Tmpfs"
+    distros: [universal]
+
+  # ============================================================
+  # 013 — ~/.cache ballooning (>10GB)
+  # ============================================================
+  - id: cache-ballooning
+    name: "~/.cache — nadmierne zużycie dysku (>10GB)"
+    category: system
+    confidence: certified
+    triggers:
+      error_contains:
+        - "cache"
+        - ".cache"
+        - "disk usage"
+        - "no space"
+        - "du -sh"
+        - "disk full"
+    explanation: >
+      Katalog ~/.cache urósł do rozmiaru powyżej 10GB.
+      Najczęściej winowajcy: przeglądarki (chromium, firefox),
+      miniaturek (thumbnails), pip cache, go build cache,
+      pacman cache (/var/cache/pacman/pkg).
+    impact: >
+      Marnowanie miejsca na dysku, potencjalne problemy
+      z brakiem miejsca na partycji /home.
+    recommended_action: >
+      rm -rf ~/.cache/chromium/Default/Cache ~/.cache/mozilla/firefox/*/cache2 ~/.cache/thumbnails/* ~/.cache/pip && go clean -cache 2>/dev/null && sudo paccache -rk 1
+    alternative: >
+      Sprawdź co zajmuje najwięcej: du -sh ~/.cache/* | sort -h | tail -10.
+      Dla przeglądarek: wyczyść cache w ustawieniach.
+      Dla go: go clean -cache. Dla pip: pip cache purge.
+      Dla pacmana: sudo paccache -rk 1.
+    risk: none
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/Pacman#Cleaning_the_package_cache"
+    distros: [universal]
