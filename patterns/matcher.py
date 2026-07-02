@@ -62,6 +62,7 @@ def match_patterns(patterns, failed_services, coredump_exes, errors, signal_info
 def format_output(pattern):
     """Output pattern data in bash-friendly KEY:VALUE format."""
     fields = {
+
         'ID': pattern['id'],
         'SCORE': str(pattern.get('_score', 0)),
         'NAME': pattern['name'],
@@ -76,7 +77,7 @@ def format_output(pattern):
     }
     
     for k, v in fields.items():
-        val = ' '.join(v.split()) if v else ''
+        val = ' '.join(v.split()) if v else '-'
         print(f'{k}:{val}')
 
 if __name__ == '__main__':

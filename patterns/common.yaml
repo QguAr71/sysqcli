@@ -181,3 +181,34 @@ patterns:
     references:
       - "https://wiki.archlinux.org/title/Zram"
     distros: [universal]
+
+  # ============================================================
+  # 006 — Pacman lockfile stale
+  # ============================================================
+  - id: pacman-lockfile
+    name: "Pacman — blokada bazy (/var/lib/pacman/db.lck)"
+    category: system
+    confidence: certified
+    triggers:
+      error_contains:
+        - "pacman"
+        - "db.lck"
+        - "lock file"
+        - "unable to lock database"
+    explanation: >
+      Pacman nie może uruchomić się, ponieważ plik blokady
+      /var/lib/pacman/db.lck istnieje. Zwykle zostaje po
+      przerwanej sesji pacmana (SIGINT, crash).
+      NIE usuwaj jeśli inny proces pacmana faktycznie działa.
+    impact: >
+      Niemożność instalacji, aktualizacji ani usuwania pakietów.
+    recommended_action: >
+      sudo rm /var/lib/pacman/db.lck
+    alternative: >
+      Sprawdź czy pacman działa: ps aux | grep pacman.
+      Jeśli nie — blokada jest sierotą, usuń.
+    risk: none
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/Pacman"
+    distros: [arch, cachyos, manjaro, endeavouros]

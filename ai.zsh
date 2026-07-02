@@ -83,6 +83,11 @@ _collect_session_info() {
     echo "CONTEXT:host=$(hostname)"
     echo "CONTEXT:uptime=$(uptime -p | sed 's/up //')"
     command -v nvidia-smi &>/dev/null && echo "CONTEXT:gpu=nvidia" || echo "CONTEXT:gpu=none"
+
+# Pacman lockfile check
+_collect_pacman_lock() {
+    [[ -f "/var/lib/pacman/db.lck" ]] && echo "ERRORS:pacman: unable to lock database (/var/lib/pacman/db.lck exists)"
+}
 }
 
 # --- Fix: Diagnostyka deterministyczna + certyfikowane wzorce (v0.3) ---
@@ -107,6 +112,7 @@ fix() {
     _collect_systemd_failed > "$tmpfile"
     _collect_coredumps >> "$tmpfile"
     _collect_session_info >> "$tmpfile"
+    _collect_pacman_lock >> "$tmpfile"
     echo "ERRORS:$(_collect_journal_errors)" >> "$tmpfile"
 
     # 2. Match
