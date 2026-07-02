@@ -255,3 +255,51 @@ patterns:
     references:
       - "https://wiki.archlinux.org/title/NVIDIA"
     distros: [arch, cachyos]
+
+  # ============================================================
+  # 008 — GDM freeze / GNOME session hang
+  # ============================================================
+  - id: gdm-session-freeze
+    name: "GDM/GNOME — zawieszenie sesji (restart GDM)"
+    category: gnome
+    confidence: certified
+    triggers:
+      error_contains:
+        - "gdm"
+        - "GdmSession"
+        - "gdm-session-worker"
+        - "gdm.service"
+        - "gnome-shell"
+        - "mutter"
+        - "clutter"
+        - "stuck"
+        - "freeze"
+        - "frozen"
+        - "timeout"
+        - "D-Bus"
+        - "login screen"
+      services:
+        - "gdm.service"
+    explanation: >
+      Sesja GNOME lub ekran logowania GDM zawiesił się.
+      Objawia się zamrożonym ekranem, brakiem reakcji na
+      klawiaturę/mysz, gnome-shell nie odpowiada.
+      Częsta przyczyna: wyścig między mutter a sterownikiem
+      NVIDIA po suspendzie, albo błąd w rozszerzeniu GNOME.
+    impact: >
+      Całkowita utrata kontroli nad pulpitem. Wymaga
+      przełączenia na inny TTY (Ctrl+Alt+F3) lub twardego
+      resetu.
+    recommended_action: >
+      sudo systemctl restart gdm
+    alternative: >
+      Z innego TTY (Ctrl+Alt+F3): zaloguj się i wykonaj
+      restart. Jeśli restart nie pomaga: sudo systemctl
+      restart nvidia-persistenced.service przed gdm.
+      W ostateczności: sudo reboot.
+    risk: medium
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/GDM"
+      - "https://wiki.archlinux.org/title/GNOME"
+    distros: [arch, cachyos, fedora]
