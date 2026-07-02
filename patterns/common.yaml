@@ -547,3 +547,42 @@ patterns:
     references:
       - "https://wiki.archlinux.org/title/Pacman#Cleaning_the_package_cache"
     distros: [universal]
+
+  # ============================================================
+  # 014 — systemd-oomd false positive (user session killed)
+  # ============================================================
+  - id: systemd-oomd-false
+    name: "systemd-oomd — fałszywy alarm (sesja użytkownika zabita)"
+    category: system
+    confidence: certified
+    triggers:
+      error_contains:
+        - "oomd"
+        - "systemd-oomd"
+        - "memory pressure"
+        - "pressure"
+        - "killed process"
+        - "user.slice"
+        - "user-1000.slice"
+    explanation: >
+      systemd-oomd zabił proces użytkownika błędnie oceniając
+      presję pamięci. Zdarza się przy aplikacjach Electron
+      (vscode, discord) lub przeglądarkach z wieloma kartami.
+      systemd-oomd mierzy pressure w user.slice i może być
+      zbyt agresywny na maszynach z 32GB+ RAM.
+    impact: >
+      Nagłe zamknięcie przeglądarki, IDE lub terminala bez
+      ostrzeżenia. W odróżnieniu od OOM killera — ten zabija
+      prewencyjnie, zanim RAM faktycznie się skończy.
+    recommended_action: >
+      systemctl --user mask systemd-oomd.service && sudo systemctl mask systemd-oomd.service && sudo systemctl reboot
+    alternative: >
+      Dostosuj konfigurację: /etc/systemd/oomd.conf
+      (zwiększ ManagedOOMSwapUsedLimit). Lub całkowicie
+      wyłącz: mask + reboot. 32GB RAM rzadko potrzebuje oomd.
+    risk: low
+    rollback: >
+      systemctl --user unmask systemd-oomd.service && sudo systemctl unmask systemd-oomd.service
+    references:
+      - "https://wiki.archlinux.org/title/Systemd-oomd"
+    distros: [arch, cachyos, fedora]
