@@ -212,3 +212,46 @@ patterns:
     references:
       - "https://wiki.archlinux.org/title/Pacman"
     distros: [arch, cachyos, manjaro, endeavouros]
+
+  # ============================================================
+  # 007 — NVIDIA kernel module mismatch
+  # ============================================================
+  - id: nvidia-module-mismatch
+    name: "NVIDIA — niezgodność modułów po aktualizacji kernela"
+    category: nvidia
+    confidence: certified
+    triggers:
+      error_contains:
+        - "nvidia"
+        - "module"
+        - "mismatch"
+        - "version mismatch"
+        - "nvidia.ko"
+        - "nvidia-modeset.ko"
+        - "nvidia-uvm.ko"
+        - "nvidia_drm"
+        - "nvidia_modeset"
+        - "Unknown symbol"
+        - "disagrees about version"
+        - "exec format error"
+    explanation: >
+      Moduły NVIDIA nie pasują do obecnego kernela. Dzieje się
+      to po aktualizacji kernela (pacman -Syu) gdy nowy kernel
+      jest zainstalowany ale moduły NVIDIA nie zostały jeszcze
+      przebudowane. Reboot też pomaga — nowy kernel użyje
+      poprawnych modułów.
+    impact: >
+      Brak akceleracji graficznej, gnome-shell na llvmpipe,
+      nvidia-smi nie działa, ekrany mogą migotać.
+    recommended_action: >
+      sudo mkinitcpio -P && sudo reboot
+    alternative: >
+      Jeśli jądro i moduły są z tego samego update'u,
+      restart wystarczy. Sprawdź: pacman -Q linux-cachyos
+      nvidia-open-dkms. Jeśli wersje różne — dokończ
+      aktualizację: sudo pacman -Syu.
+    risk: low
+    rollback: ""
+    references:
+      - "https://wiki.archlinux.org/title/NVIDIA"
+    distros: [arch, cachyos]
