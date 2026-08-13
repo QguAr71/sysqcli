@@ -305,33 +305,32 @@ patterns:
     distros: [arch, cachyos, fedora]
 
   # ============================================================
-  # 007 (ciąg dalszy) — Flatpak portal conflicts
+  # 007 — Flatpak portal conflict (REAL conflict, verified)
   # ============================================================
   - id: flatpak-portal-conflict
     name: "Flatpak — konflikt portali (xdg-desktop-portal)"
     category: gnome
     confidence: certified
     triggers:
-      error_contains:
-        - "flatpak"
-        - "portal"
-        - "xdg-desktop-portal"
-        - "xdg-desktop-portal-gtk"
-        - "xdg-desktop-portal-gnome"
-        - "Failed to start Portal service"
-        - "Name taken"
-        - "already owned"
-        - "conflict"
-        - "duplicate"
       services:
         - "xdg-desktop-portal.service"
         - "xdg-desktop-portal-gtk.service"
         - "xdg-desktop-portal-gnome.service"
+      error_contains:
+        - "Name taken"
+        - "already owned"
+        - "Failed to register"
+        - "D-Bus name"
+      verify:
+        command: >
+          test "$(systemctl --user is-active xdg-desktop-portal-gnome.service xdg-desktop-portal-gtk.service | grep -xc active)" -ge 2
     explanation: >
-      Konflikt między portalem GTK a portalem GNOME — oba
-      próbują przejąć tę samą nazwę na D-Bus. Flatpak wymaga
-      dokładnie jednego backendu portalu. Częste po instalacji
-      aplikacji flatpak które ciągną własne zależności.
+      Dwa backendy portalu (GNOME i GTK) próbują jednocześnie
+      przejąć tę samą nazwę na D-Bus. Flatpak wymaga dokładnie
+      jednego aktywnego backendu. Weryfikowane: oba portale
+      muszą być aktywne jednocześnie (verify). Jeśli tylko
+      jeden backend aktywny, a portal i tak nie działa —
+      patrz pattern 003 (xdg-portal-gtk).
     impact: >
       Nie działające zrzuty ekranu, otwieranie plików,
       udostępnianie ekranu. Aplikacje flatpak nie mogą

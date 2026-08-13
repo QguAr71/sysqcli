@@ -4,10 +4,34 @@
 import yaml
 import sys
 import os
+import subprocess
 
 def load_patterns(path):
     with open(path) as f:
         return yaml.safe_load(f)['patterns']
+
+def verify_pattern(triggers):
+    """Run triggers.verify.command (read-only) if present.
+       Exit code 0 = hypothesis confirmed (pattern may win).
+       Non-zero or any error = hypothesis refuted (pattern rejected).
+       No verify field = legacy behavior (always passes, backward-compatible)."""
+    verify = triggers.get('verify')
+    if not verify:
+        return True
+    cmd = verify.get('command', '')
+    if not cmd:
+        return False
+    # Read-only guard: refuse anything that mutates system state.
+    for blacklist in ('sudo', 'rm ', 'mv ', 'cp ', 'dd ', 'mkfs', 'pacman ', 'systemctl restart',
+                      'systemctl enable', 'systemctl disable', 'systemctl mask', 'systemctl unmask',
+                      '>', '>>'):
+        if blacklist in cmd:
+            return False
+    try:
+        return subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL, timeout=5).returncode == 0
+    except Exception:
+        return False
 
 def match_patterns(patterns, failed_services, coredump_exes, errors, signal_info):
     """Score each pattern. Returns best match or None. Threshold=4."""
@@ -15,8 +39,14 @@ def match_patterns(patterns, failed_services, coredump_exes, errors, signal_info
     best_score = 0
     
     for p in patterns:
-        score = 0
         triggers = p.get('triggers', {})
+        
+        # Verify gate: run BEFORE scoring. A refuted hypothesis is hard-rejected,
+        # regardless of how well the substring triggers match.
+        if not verify_pattern(triggers):
+            continue
+        
+        score = 0
         
         # Service match (per service)
         svc_count = 0
