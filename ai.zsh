@@ -147,6 +147,8 @@ _fix_show_match_friendly() {
     local conf=$(echo "$data" | grep '^CONFIDENCE:' | cut -d: -f2-)
     local alt=$(echo "$data" | grep '^ALT:' | cut -d: -f2-)
     local score=$(echo "$data" | grep '^SCORE:' | cut -d: -f2-)
+    local matched=$(echo "$data" | grep '^MATCHED_TRIGGERS:' | cut -d: -f2-)
+    local downgraded=$(echo "$data" | grep '^DOWNGRADED:' | cut -d: -f2-)
     local kernel=$(echo "$data" | grep '^CONTEXT_KERNEL:' | cut -d: -f2-)
     local desktop=$(echo "$data" | grep '^CONTEXT_DESKTOP:' | cut -d: -f2-)
     local session=$(echo "$data" | grep '^CONTEXT_SESSION:' | cut -d: -f2-)
@@ -205,6 +207,12 @@ ODPOWIEDŹ (2-3 zdania):"
     echo -e "  Ryzyko:     $rbadge"
     echo -e "  Źródło:     $conf"
     [[ -n "$rollback" ]] && echo -e "  Rollback:   $rollback"
+    if [[ -n "$matched" && "$matched" != "-" ]]; then
+        echo -e "\e[90m  Dowody:     $matched\e[0m"
+    fi
+    if [[ "$downgraded" == "1" ]]; then
+        echo -e "\e[90m  Uwaga:      wzorzec 'certified' bez verify — obniżono do 'community'\e[0m"
+    fi
     echo ""
 
     # Dry-run
@@ -282,6 +290,8 @@ _fix_show_match() {
     local rollback=$(echo "$data" | grep '^ROLLBACK:' | cut -d: -f2-)
     local alt=$(echo "$data" | grep '^ALT:' | cut -d: -f2-)
     local score=$(echo "$data" | grep '^SCORE:' | cut -d: -f2-)
+    local matched=$(echo "$data" | grep '^MATCHED_TRIGGERS:' | cut -d: -f2-)
+    local downgraded=$(echo "$data" | grep '^DOWNGRADED:' | cut -d: -f2-)
 
     # Confidence badge
     local badge=""
@@ -312,6 +322,12 @@ _fix_show_match() {
     echo -e "  Ryzyko:     $rbadge"
     echo -e "  Źródło:     $conf"
     [[ -n "$rollback" ]] && echo -e "  Rollback:   $rollback"
+    if [[ -n "$matched" && "$matched" != "-" ]]; then
+        echo -e "\e[90m  Dowody:     $matched\e[0m"
+    fi
+    if [[ "$downgraded" == "1" ]]; then
+        echo -e "\e[90m  Uwaga:      wzorzec oznaczony 'certified' bez verify — obniżono do 'community'\e[0m"
+    fi
     echo ""
 
     # Dry-run — tylko symulacja

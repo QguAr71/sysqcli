@@ -8,7 +8,19 @@ import subprocess
 
 def load_patterns(path):
     with open(path) as f:
-        return yaml.safe_load(f)['patterns']
+        patterns = yaml.safe_load(f)['patterns']
+    # Enforce honest 'certified': requires verify + references.
+    # Patterns with confidence=certified but no verify/references are
+    # downgraded to 'community' (graceful — never refuses to start).
+    for p in patterns:
+        if p.get('confidence') == 'certified':
+            triggers = p.get('triggers', {})
+            has_verify = bool(triggers.get('verify', {}).get('command'))
+            has_refs = bool(p.get('references'))
+            if not (has_verify and has_refs):
+                p['_downgraded'] = True
+                p['confidence'] = 'community'
+    return patterns
 
 def verify_pattern(triggers):
     """Run triggers.verify.command (read-only) if present.
@@ -50,30 +62,38 @@ def match_patterns(patterns, failed_services, coredump_exes, errors, signal_info
         
         # Service match (per service)
         svc_count = 0
+        matched_svcs = []
         for svc in triggers.get('services', []):
             for f in failed_services:
                 if svc in f:
                     svc_count += 1
+                    matched_svcs.append(svc)
         score += svc_count * 5
         
         # Executable match in coredumps
         exe_count = 0
+        matched_exes = []
         for exe in triggers.get('executables', []):
             for c in coredump_exes:
                 if exe in c:
                     exe_count += 1
+                    matched_exes.append(exe)
         score += exe_count * 4
         
         # Signal match
         sig = triggers.get('signal', '')
+        matched_sig = ''
         if sig and sig in signal_info:
             score += 3
+            matched_sig = sig
         
         # Error message contains
         err_count = 0
+        matched_errs = []
         for err in triggers.get('error_contains', []):
             if err.lower() in errors.lower():
                 err_count += 1
+                matched_errs.append(err)
         score += err_count * 3
         
         # Multi-hit bonus: +2 per extra match type beyond first
@@ -84,13 +104,32 @@ def match_patterns(patterns, failed_services, coredump_exes, errors, signal_info
         if score > best_score:
             best_score = score
             best = p
-            # Attach score for output
+            # Attach score + evidence for output ("why it won")
             best['_score'] = score
+            best['_evidence'] = {
+                'services': matched_svcs,
+                'executables': matched_exes,
+                'signal': matched_sig,
+                'error_contains': matched_errs,
+            }
     
     return best if best_score >= 4 else None
 
 def format_output(pattern):
     """Output pattern data in bash-friendly KEY:VALUE format."""
+    # Build human-readable evidence string ("why it won")
+    ev = pattern.get('_evidence', {})
+    parts = []
+    if ev.get('services'):
+        parts.append('services=' + ','.join(ev['services']))
+    if ev.get('executables'):
+        parts.append('executables=' + ','.join(ev['executables']))
+    if ev.get('signal'):
+        parts.append('signal=' + ev['signal'])
+    if ev.get('error_contains'):
+        parts.append('errors=' + ','.join(ev['error_contains']))
+    evidence = '; '.join(parts) if parts else '-'
+
     fields = {
 
         'ID': pattern['id'],
@@ -98,6 +137,8 @@ def format_output(pattern):
         'NAME': pattern['name'],
         'CATEGORY': pattern.get('category', 'system'),
         'CONFIDENCE': pattern.get('confidence', 'community'),
+        'DOWNGRADED': '1' if pattern.get('_downgraded') else '0',
+        'MATCHED_TRIGGERS': evidence,
         'EXPLANATION': pattern['explanation'].strip(),
         'IMPACT': pattern.get('impact', '').strip(),
         'ACTION': pattern['recommended_action'].strip(),
