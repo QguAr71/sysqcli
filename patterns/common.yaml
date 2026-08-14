@@ -26,6 +26,8 @@ patterns:
         - "no Qt platform plugin"
         - "Could not find the Qt platform plugin"
         - "qt.qpa.plugin"
+      verify:
+        command: systemctl --user is-failed arch-update-tray.service
     explanation: >
       Usługa arch-update-tray używa Qt6, które nie wspiera
       poprawnie system tray na sesji Wayland. Powoduje to
@@ -63,6 +65,8 @@ patterns:
         - "nvidia-modeset"
         - "NVRM"
         - "GPU board serial number"
+      journal_evidence:
+        command: journalctl -b --no-pager | grep -qiE 'nvidia|NVRM'
     explanation: >
       Sterownik NVIDIA (modeset) niepoprawnie wznawia pracę
       po suspend-to-RAM. Objawia się czarnym ekranem lub
@@ -95,6 +99,9 @@ patterns:
         - "Failed to start Portal service"
         - "xdg-desktop-portal"
         - "portal"
+      verify:
+        command: >
+          test "$(systemctl --user is-active xdg-desktop-portal-gtk.service xdg-desktop-portal.service | grep -xc active)" -eq 0
     explanation: >
       Usługa portalu GTK/GNOME nie może się poprawnie
       zainicjalizować. Częsty problem na Wayland po
@@ -131,6 +138,9 @@ patterns:
         - "wireplumber"
         - "pipewire"
         - "ALSA"
+      verify:
+        command: >
+          test "$(systemctl --user is-active wireplumber.service pipewire.service pipewire-pulse.service | grep -xvc active)" -ge 1
     explanation: >
       WirePlumber (menedżer sesji PipeWire) uległ awarii.
       Może to być spowodowane konfliktem z PulseAudio lub
@@ -164,6 +174,8 @@ patterns:
         - "killed process"
         - "oom-killer"
         - "Killed process"
+      journal_evidence:
+        command: journalctl -b --no-pager | grep -qiE 'killed process|out of memory|oom-kill'
     explanation: >
       System zabił proces z powodu braku dostępnej pamięci RAM
       (OOM killer). Najczęściej ofiarą pada przeglądarka lub
@@ -195,6 +207,8 @@ patterns:
         - "db.lck"
         - "lock file"
         - "unable to lock database"
+      verify:
+        command: test -f /var/lib/pacman/db.lck
     explanation: >
       Pacman nie może uruchomić się, ponieważ plik blokady
       /var/lib/pacman/db.lck istnieje. Zwykle zostaje po
@@ -234,6 +248,8 @@ patterns:
         - "Unknown symbol"
         - "disagrees about version"
         - "exec format error"
+      verify:
+        command: nvidia-smi
     explanation: >
       Moduły NVIDIA nie pasują do obecnego kernela. Dzieje się
       to po aktualizacji kernela (pacman -Syu) gdy nowy kernel
@@ -280,6 +296,8 @@ patterns:
         - "login screen"
       services:
         - "gdm.service"
+      journal_evidence:
+        command: journalctl -b -u gdm --no-pager | grep -qiE 'GdmSession|frozen|stuck|timeout'
     explanation: >
       Sesja GNOME lub ekran logowania GDM zawiesił się.
       Objawia się zamrożonym ekranem, brakiem reakcji na
@@ -368,6 +386,8 @@ patterns:
         - "GLX"
         - "EGL"
         - "renderer"
+      verify:
+        command: glxinfo -B | grep -qi llvmpipe
     explanation: >
       GNOME/GPU używa programowego renderowania (llvmpipe)
       zamiast sprzętowego przyspieszenia NVIDIA. Oznacza to
@@ -408,6 +428,8 @@ patterns:
         - "message bus"
         - "reply timeout"
         - "method call timeout"
+      journal_evidence:
+        command: journalctl -b --no-pager | grep -qiE 'dbus.*(timeout|connection refused)'
     explanation: >
       Aplikacje nie mogą połączyć się z sesyjną magistralą
       D-Bus. Często po wybudzeniu z suspendu lub przy
@@ -451,6 +473,9 @@ patterns:
       services:
         - "pulseaudio.service"
         - "pipewire-pulse.service"
+      verify:
+        command: >
+          test "$(systemctl --user is-active pulseaudio.service pipewire-pulse.service | grep -xc active)" -ge 2
     explanation: >
       Zarówno PulseAudio jak i PipeWire-Pulse próbują zająć
       ten sam socket audio. Dzieje się to gdy obie usługi
@@ -491,6 +516,9 @@ patterns:
         - "cannot write"
         - "ENOSPC"
         - "out of space"
+      verify:
+        command: >
+          test "$(df --output=pcent /tmp | tail -1 | tr -dc '0-9')" -ge 95
     explanation: >
       Partycja /tmp (tmpfs w RAM) jest pełna. tmpfs ma
       domyślnie rozmiar połowy dostępnego RAM. Duże pliki
@@ -526,6 +554,9 @@ patterns:
         - "no space"
         - "du -sh"
         - "disk full"
+      verify:
+        command: >
+          test "$(du -sm ~/.cache 2>/dev/null | cut -f1)" -ge 10240
     explanation: >
       Katalog ~/.cache urósł do rozmiaru powyżej 10GB.
       Najczęściej winowajcy: przeglądarki (chromium, firefox),
@@ -563,6 +594,8 @@ patterns:
         - "killed process"
         - "user.slice"
         - "user-1000.slice"
+      journal_evidence:
+        command: journalctl -b --no-pager | grep -qiE 'oomd.*killed|memory pressure'
     explanation: >
       systemd-oomd zabił proces użytkownika błędnie oceniając
       presję pamięci. Zdarza się przy aplikacjach Electron

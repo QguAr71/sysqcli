@@ -6,21 +6,44 @@ import sys
 import os
 import subprocess
 
+def _has_evidence(triggers):
+    """A pattern has honest evidence if it provides either:
+       - verify.command (read-only check of current state), or
+       - journal_evidence.command (read-only check of a log trace)."""
+    verify = triggers.get('verify', {})
+    journal = triggers.get('journal_evidence', {})
+    return bool(verify.get('command')) or bool(journal.get('command'))
+
+
 def load_patterns(path):
     with open(path) as f:
         patterns = yaml.safe_load(f)['patterns']
-    # Enforce honest 'certified': requires verify + references.
-    # Patterns with confidence=certified but no verify/references are
-    # downgraded to 'community' (graceful — never refuses to start).
+    # Enforce honest 'certified': requires evidence (verify OR journal_evidence)
+    # + references. Patterns without evidence are downgraded to 'community'
+    # (graceful — never refuses to start, I-18).
     for p in patterns:
         if p.get('confidence') == 'certified':
             triggers = p.get('triggers', {})
-            has_verify = bool(triggers.get('verify', {}).get('command'))
-            has_refs = bool(p.get('references'))
-            if not (has_verify and has_refs):
+            if not (_has_evidence(triggers) and bool(p.get('references'))):
                 p['_downgraded'] = True
                 p['confidence'] = 'community'
     return patterns
+
+def _run_readonly(cmd, timeout=5):
+    """Run a read-only verification command. Returns True on exit code 0.
+       Refuses anything that mutates system state. Never raises."""
+    # Read-only guard: refuse anything that mutates system state.
+    for blacklist in ('sudo', 'rm ', 'mv ', 'cp ', 'dd ', 'mkfs', 'pacman ', 'systemctl restart',
+                      'systemctl enable', 'systemctl disable', 'systemctl mask', 'systemctl unmask',
+                      '>', '>>'):
+        if blacklist in cmd:
+            return False
+    try:
+        return subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL, timeout=timeout).returncode == 0
+    except Exception:
+        return False
+
 
 def verify_pattern(triggers):
     """Run triggers.verify.command (read-only) if present.
@@ -33,17 +56,23 @@ def verify_pattern(triggers):
     cmd = verify.get('command', '')
     if not cmd:
         return False
-    # Read-only guard: refuse anything that mutates system state.
-    for blacklist in ('sudo', 'rm ', 'mv ', 'cp ', 'dd ', 'mkfs', 'pacman ', 'systemctl restart',
-                      'systemctl enable', 'systemctl disable', 'systemctl mask', 'systemctl unmask',
-                      '>', '>>'):
-        if blacklist in cmd:
-            return False
-    try:
-        return subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL,
-                              stderr=subprocess.DEVNULL, timeout=5).returncode == 0
-    except Exception:
+    return _run_readonly(cmd)
+
+
+def verify_journal_evidence(triggers):
+    """Run triggers.journal_evidence.command (read-only) if present.
+       Used for historical/event patterns (OOM, suspend hang, session freeze)
+       where the evidence is a trace in the journal, not a current state.
+       Exit code 0 = trace found (hypothesis confirmed).
+       Non-zero / no output = trace absent (hypothesis refuted).
+       No journal_evidence field = always passes (backward-compatible)."""
+    journal = triggers.get('journal_evidence')
+    if not journal:
+        return True
+    cmd = journal.get('command', '')
+    if not cmd:
         return False
+    return _run_readonly(cmd)
 
 def match_patterns(patterns, failed_services, coredump_exes, errors, signal_info):
     """Score each pattern. Returns best match or None. Threshold=4."""
@@ -56,6 +85,8 @@ def match_patterns(patterns, failed_services, coredump_exes, errors, signal_info
         # Verify gate: run BEFORE scoring. A refuted hypothesis is hard-rejected,
         # regardless of how well the substring triggers match.
         if not verify_pattern(triggers):
+            continue
+        if not verify_journal_evidence(triggers):
             continue
         
         score = 0
