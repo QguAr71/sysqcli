@@ -66,7 +66,7 @@ _collect_coredumps() {
     coredumpctl list --since yesterday --no-legend 2>/dev/null \
         | awk '{for(i=1;i<=NF;i++) if($i ~ /^\//) {print "CORE:"$i; break}}'
     coredumpctl list --since yesterday --no-legend 2>/dev/null \
-        | awk '{print $6}' | sort -u | while read s; do echo "SIGNAL:$s"; done
+        | awk '{print $8}' | grep -E '^SIG' | sort -u | while read s; do echo "SIGNAL:$s"; done
 }
 
 _collect_journal_errors() {
@@ -117,19 +117,22 @@ fix() {
 
     # 2. Match
     local result=$(python3 ~/.config/sysqcli/patterns/matcher.py < "$tmpfile" 2>/dev/null)
-    rm -f "$tmpfile"
 
     if [[ -z "$result" ]]; then
+        rm -f "$tmpfile"
         echo -e "\e[1;31m✗ Błąd: nie można uruchomić matcher.py\e[0m"
         return 1
     fi
 
     # 3. Display
     if echo "$result" | grep -q '^NO_MATCH'; then
-        _fix_no_match
+        _fix_no_match "$tmpfile"
+        rm -f "$tmpfile"
     elif [[ $friendly -eq 1 ]]; then
+        rm -f "$tmpfile"
         _fix_show_match_friendly "$result" "$dry_run"
     else
+        rm -f "$tmpfile"
         _fix_show_match "$result" "$dry_run"
     fi
 }
@@ -367,9 +370,46 @@ _fix_show_match() {
 
 # --- Helper: brak dopasowania ---
 _fix_no_match() {
+    local diag="${1:-}"
     echo -e "\e[33m\n⚠ Problem nierozpoznany\e[0m"
     echo -e "SysQCLI nie posiada certyfikowanej procedury dla tego typu błędu."
     echo ""
+
+    # Pokaż co faktycznie wykryto (dowody diagnostyczne)
+    if [[ -n "$diag" && -f "$diag" ]]; then
+        local failed=$(grep '^FAILED:' "$diag" 2>/dev/null | sed 's/^FAILED:/- /' | sort -u)
+        local coredumps=$(grep '^CORE:' "$diag" 2>/dev/null | sed 's/^CORE://' | sort | uniq -c | sort -rn | awk '{printf "  - %s (x%s)\n", $2, $1}')
+        local signals=$(grep '^SIGNAL:' "$diag" 2>/dev/null | sed 's/^SIGNAL://' | grep -v '^$' | sort -u | tr '\n' ' ')
+        local errors=$(grep '^ERRORS:' "$diag" 2>/dev/null | sed 's/^ERRORS://' | tr '|' '\n' | sed 's/^ *//; s/ *$//' | grep -v '^$' | sort -u | head -15)
+        local pacman_lock=$(grep -c 'db.lck' "$diag" 2>/dev/null)
+
+        echo -e "\e[1;36m═══ Wykryte sygnały awarii ═══\e[0m"
+        if [[ -n "$failed" ]]; then
+            echo -e "\e[1;31m✗ Failed services:\e[0m"
+            echo "$failed"
+            echo ""
+        fi
+        if [[ -n "$coredumps" ]]; then
+            echo -e "\e[1;31m✗ Coredumpy (24h):\e[0m"
+            echo "$coredumps"
+            [[ -n "$signals" ]] && echo -e "  Sygnały: $signals"
+            echo ""
+        fi
+        if [[ "$pacman_lock" -gt 0 ]]; then
+            echo -e "\e[1;33m⚠ Pacman lockfile: /var/lib/pacman/db.lck\e[0m"
+            echo ""
+        fi
+        if [[ -n "$errors" ]]; then
+            echo -e "\e[1;33m⚠ Błędy journal (unique):\e[0m"
+            echo "$errors" | sed 's/^/  /'
+            echo ""
+        fi
+        if [[ -z "$failed" && -z "$coredumps" && -z "$errors" && "$pacman_lock" -eq 0 ]]; then
+            echo -e "  (brak wykrytych sygnałów — czysto)"
+            echo ""
+        fi
+    fi
+
     echo -e "Dostępne opcje:"
     echo -e "  \e[1m[R]\e[0maport   — zapisz raport diagnostyczny do pliku"
     echo -e "  \e[1m[D]\e[0meleguj — przekaż do Goose (jeśli dostępny)"
