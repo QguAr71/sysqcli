@@ -125,7 +125,7 @@ fix() {
     fi
 
     # 3. Display
-    if [[ "$result" == "NO_MATCH" ]]; then
+    if echo "$result" | grep -q '^NO_MATCH'; then
         _fix_no_match
     elif [[ $friendly -eq 1 ]]; then
         _fix_show_match_friendly "$result" "$dry_run"

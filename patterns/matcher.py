@@ -220,9 +220,4 @@ if __name__ == '__main__':
             print(f'CONTEXT_HOST:{context.get("host", "?")}')
         format_output(match)
     else:
-        if context:
-            print(f'CONTEXT_KERNEL:{context.get("kernel", "?")}')
-            print(f'CONTEXT_DESKTOP:{context.get("desktop", "?")}')
-            print(f'CONTEXT_SESSION:{context.get("session", "?")}')
-            print(f'CONTEXT_GPU:{context.get("gpu", "?")}')
         print('NO_MATCH')
