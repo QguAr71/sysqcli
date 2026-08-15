@@ -250,7 +250,7 @@ ODPOWIEDŹ (2-3 zdania):"
     fi
 }
 
-# --- Helper: delegacja do Goose (v0.4) ---
+# --- Helper: delegacja do Echo (pełna ścieżka: goose + Lazarus MCP + Citadel) ---
 _fix_delegate_to_goose() {
     if ! command -v goose &>/dev/null; then
         echo -e "\e[33mGoose nie jest dostępny.\e[0m"
@@ -258,7 +258,7 @@ _fix_delegate_to_goose() {
         echo "Lub użyj fix --report i przekaż raport ręcznie."
         return 1
     fi
-    echo -e "\e[35m[G] Deleguję do Goose z pełnym kontekstem...\e[0m"
+    echo -e "\e[35m[Echo] Deleguję do Echo (Goose + Lazarus MCP + Citadel)...\e[0m"
     local ctx="# SysQCLI Diagnostic Report
 System: $(hostname), kernel $(uname -r)
 DE: ${XDG_CURRENT_DESKTOP:-?}, Session: ${XDG_SESSION_TYPE:-?}
@@ -276,7 +276,11 @@ $(coredumpctl list --since yesterday --no-legend 2>/dev/null | awk '{for(i=1;i<=
 === UNIQUE ERRORS ===
 $(journalctl -p 3 -xb -n 30 -o cat --no-pager 2>/dev/null | grep -vE '^\s*(#|Stack trace|Available|ELF|$)' | grep -vE '\.so\.|pthread_kill|raise|abort|PyEval|Py_Bytes|Py_Run|__libc_start' | sort -u)
 "
-    printf "Przeanalizuj ten raport diagnostyczny z systemu Arch Linux. Zidentyfikuj główną przyczynę problemów i zaproponuj konkretne rozwiązanie:\n\n%s" "$ctx" | goose run -i - 2>&1
+    # Pełna ścieżka: goose run z ~/.config/goose/config.yaml (zawiera MCP Lazarus :9595)
+    # — więc to Echo z Citadel/Vault/kontekstem, nie goły goose.
+    goose run -t "Przeanalizuj ten raport diagnostyczny z systemu Arch Linux. Zidentyfikuj główną przyczynę problemów i zaproponuj konkretne rozwiązanie:
+
+${ctx}" 2>&1
 }
 
 # --- Helper: wyświetl dopasowane rozwiązanie ---
