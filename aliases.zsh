@@ -154,6 +154,28 @@ sysq() {
     local port=$(cat ~/.cache/lazarus/mcp_port 2>/dev/null | tr -d '\n')
     port="${port:-9595}"
     sed -i "s|uri: http://localhost:[0-9]\+/mcp|uri: http://localhost:${port}/mcp|" ~/.config/goose/config.yaml
+
+    # ══ PEAK/OFF-PEAK ALERT ══
+    # Oficjalne okna szczytu DeepSeek: 01:00-04:00 UTC i 06:00-10:00 UTC.
+    # Czerwono = PEAK (drożej, rozważ Flash). Zielono = OFF-PEAK.
+    local now_utc_min now_hh now_mm peak=""
+    now_utc_min=$(( $(date -u +%H) * 60 + $(date -u +%M) ))
+    now_hh=$(date -u +%H); now_mm=$(date -u +%M)
+    if (( (now_utc_min >= 60 && now_utc_min < 240) || (now_utc_min >= 360 && now_utc_min < 600) )); then
+        peak=1
+    fi
+    if [[ -n "$peak" ]]; then
+        echo -e "\e[31;1m╔═══════════════════════════════════════════════╗"
+        echo -e "\e[31;1m║  ██ PEAK HOUR  ⚠  DeepSeek taryfa szczytowa    ║"
+        echo -e "\e[31;1m║  teraz $now_hh:$now_mm UTC — droższe API        ║"
+        echo -e "\e[31;1m║  rozważ Flash / odłóż ciężkie zadania           ║"
+        echo -e "\e[31;1m║  okna szczytu: 01-04 / 06-10 UTC                 ║"
+        echo -e "\e[31;1m╚═══════════════════════════════════════════════╝\e[0m"
+        echo -en "\a"
+    else
+        echo -e "\e[32;1m║  ✓ OFF-PEAK  —  $now_hh:$now_mm UTC, taryfa normalna\e[0m"
+    fi
+
     lazarus-agent goose session --name sysq --with-builtin developer
 }
 
