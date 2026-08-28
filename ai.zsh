@@ -35,11 +35,11 @@ ai() {
     _ai_ready || return 1
 
     # Profile Ollama (dopasowane do 6GB VRAM, 32GB RAM)
-    local PROFILE="mechanik"                     # deepseek-coder-v2:16b Q4_0, 8.9GB, 23.8 t/s
+    local PROFILE="qwen2.5-coder:7b"              # koder, 4.7GB, mieści się w 6GB VRAM
     case "$1" in
-        -f) PROFILE="mini"; shift ;;               # qwen2.5:7b Q4_K_M, 4.7GB full GPU, 39 t/s
+        -f) PROFILE="qwen2.5-coder:7b"; shift ;;   # ten sam model, szybki tryb
 
-        -m) PROFILE="mechanik"; shift ;;           # jawnie mechanik
+        -m) PROFILE="qwen2.5-coder:7b"; shift ;;   # jawnie koder
     esac
 
     local q="$*"
@@ -83,11 +83,11 @@ _collect_session_info() {
     echo "CONTEXT:host=$(hostname)"
     echo "CONTEXT:uptime=$(uptime -p | sed 's/up //')"
     command -v nvidia-smi &>/dev/null && echo "CONTEXT:gpu=nvidia" || echo "CONTEXT:gpu=none"
+}
 
 # Pacman lockfile check
 _collect_pacman_lock() {
     [[ -f "/var/lib/pacman/db.lck" ]] && echo "ERRORS:pacman: unable to lock database (/var/lib/pacman/db.lck exists)"
-}
 }
 
 # --- Fix: Diagnostyka deterministyczna + certyfikowane wzorce (v0.3) ---
@@ -181,7 +181,7 @@ ZASADY ŻELAZNE (złamanie = porażka):
 
 ODPOWIEDŹ (2-3 zdania):"
 
-    local translated=$(ollama run "mechanik" "$prompt" 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\x1b\[[0-9;]*[^a-zA-Z]//g; s/\r//g' | tr -s ' \n' | head -3)
+    local translated=$(ollama run "qwen2.5-coder:7b" "$prompt" 2>/dev/null | sed 's/\x1b\[[0-9;]*[a-zA-Z]//g; s/\x1b\[[0-9;]*[^a-zA-Z]//g; s/\r//g' | tr -s ' \n' | head -3)
 
     # Badge
     local badge=""
@@ -474,7 +474,7 @@ _fix_explain() {
     local query="$*"
     [[ -z "$query" ]] && { echo "fix --explain <nazwa usługi lub błędu>"; return 1; }
     echo -e "\e[34m[ AI: mechanik] Wyjaśniam: $query\e[0m"
-    _ai_ready && ollama run "mechanik" "Wyjaśnij po polsku, zwięźle (max 3 zdania), co oznacza ten błąd systemowy: $query"
+    _ai_ready && ollama run "qwen2.5-coder:7b" "Wyjaśnij po polsku, zwięźle (max 3 zdania), co oznacza ten błąd systemowy: $query"
 }
 
 # --- Summary: AI podsumowanie dnia ---
@@ -493,9 +493,9 @@ command_not_found_handler() {
 }
 
 # --- Aliasy AI ---
-alias sc='ai'          # DeepSeek Coder (domyślny)
-alias si='ai -f'       # Phi3 mini (szybki)
-alias sii='ai'         # DeepSeek Coder
+alias sc='ai'          # qwen2.5-coder:7b (domyślny koder)
+alias si='ai -f'       # qwen2.5-coder:7b (szybki)
+alias sii='ai'         # qwen2.5-coder:7b
 
 
 # --- Purge cache przy starcie ---
