@@ -12,6 +12,7 @@ sysqcli() {
     echo -e "  \e[1;32msysq\e[0m           - Lazarus + MCP + Citadel (produkcja)"
     echo -e "  \e[1;32mdev\e[0m            - Sandbox: osobny lazarusd + dev SuperWing"
     echo -e "  \e[1;32meho\e[0m            - Fallback: goły goose (gdy lazarusd padnie)"
+    echo -e "  \e[1;32mqwen\e[0m           - Awaryjny: lokalny qwen2.5-coder:7b (darmowy, offline)"
     echo -e "\e[1;34m AI & DIAGNOSTYKA:\e[0m"
     echo -e "  \e[1;32msc/si\e[0m          - Asystent AI (mechanik / mini)"
     echo -e "  \e[1;32mfix\e[0m            - AI analizuje błędy z journalctl i naprawia"

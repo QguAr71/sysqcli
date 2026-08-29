@@ -182,6 +182,10 @@ sysq() {
 # dev — sandbox (DEV-ONLY): osobny lazarusd :9596 + osobny config ~/.config/goose-sandbox
 alias dev='GOOSE_PROVIDER=deepseek-v4-sandbox GOOSE_MODEL=deepseek-v4-pro GOOSE_CONFIG_DIR=$HOME/.config/goose-sandbox LAZARUS_SUPERWING=dev LAZARUS_WING=default GOOSE_CLI_MIN_PRIORITY=0.9 lazarus-agent goose session --name dev --with-builtin developer'
 
+# qwen — tryb awaryjny (local, darmowy): czysty goose bez balastu extensions,
+# tylko developer (minimum do diagnostyki/edycji). Bez Lazarusa, bez todo/platform.
+alias qwen='GOOSE_PROVIDER=ollama GOOSE_MODEL=qwen2.5-coder:7b goose session --name qwen --no-profile --with-builtin developer'
+
 # eho — fallback: goły goose z sandbox providerem, bez Lazarusa (gdy lazarusd padnie)
 alias eho='GOOSE_CONFIG_DIR=$HOME/.config/goose-eho goose session --name eho --with-builtin developer'
 
