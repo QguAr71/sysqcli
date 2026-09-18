@@ -165,15 +165,10 @@ sysq() {
         peak=1
     fi
     if [[ -n "$peak" ]]; then
-        echo -e "\e[31;1m╔═══════════════════════════════════════════════╗"
-        echo -e "\e[31;1m║  ██ PEAK HOUR  ⚠  DeepSeek taryfa szczytowa    ║"
-        echo -e "\e[31;1m║  teraz $now_hh:$now_mm UTC — droższe API        ║"
-        echo -e "\e[31;1m║  rozważ Flash / odłóż ciężkie zadania           ║"
-        echo -e "\e[31;1m║  okna szczytu: 01-04 / 06-10 UTC                 ║"
-        echo -e "\e[31;1m╚═══════════════════════════════════════════════╝\e[0m"
+        echo -e "\e[31;1m⚠ PEAK $now_hh:$now_mm UTC — DeepSeek taryfa szczytowa (01-04 / 06-10 UTC)\e[0m"
         echo -en "\a"
     else
-        echo -e "\e[32;1m║  ✓ OFF-PEAK  —  $now_hh:$now_mm UTC, taryfa normalna\e[0m"
+        echo -e "\e[32;1m✓ OFF-PEAK — $now_hh:$now_mm UTC, taryfa normalna\e[0m"
     fi
 
     lazarus-agent goose session --name sysq --with-builtin developer
