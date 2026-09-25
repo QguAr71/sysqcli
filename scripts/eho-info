@@ -1,0 +1,27 @@
+#!/usr/bin/env zsh
+# ===============================================================
+# eho-info — opis aliasów Lazarus / Goose (kanon = aliases.zsh)
+# ===============================================================
+
+echo -e "\e[1;36m┌── LAZARUS / GOOSE — ALIASY ──────────────────────────────────┐\e[0m"
+
+echo -e "\e[1;32m  sysq  \e[0m → PEŁNA ŚCIEŻKA (lazarus-agent + pidfd + MCP + Citadel)"
+echo "         Provider: deepseek-flash (active_provider z config.yaml)"
+
+echo -e "\e[1;32m  eho   \e[0m → PEŁNA ŚCIEŻKA (lazarus-agent) + provider deepseek-v4-pro"
+echo "         Ten sam pipeline co sysq, inny provider."
+
+echo -e "\e[1;32m  dev   \e[0m → Sandbox (osobny lazarusd :9596 + dev SuperWing)"
+echo "         Provider: deepseek-v4-sandbox"
+
+echo -e "\e[1;33m  eho1  \e[0m → AWARYJNY (cienki lazarus-session, sam auto-handoff)"
+echo "         Provider: deepseek-v4-pro. Działa bez pidfd/MCP bridge."
+
+echo -e "\e[1;33m  gs    \e[0m → CZYSTY GOOSE (cienki wrapper, domyślny active_provider)"
+echo "         Bez Lazarusa — fallback gdy cały stack padnie."
+
+echo -e "\e[1;36m├────────────────────────────────────────────────────────────────┤\e[0m"
+echo -e "\e[1m  Role:\e[0m"
+echo "  sysq/eho/dev  = sesje pełne       (lazarus-agent, wymagają zsh-funkcji)"
+echo "  eho1/gs       = awaryjne/cienkie  (zwykły alias, działa też w bash)"
+echo -e "\e[1;36m└────────────────────────────────────────────────────────────────┘\e[0m"

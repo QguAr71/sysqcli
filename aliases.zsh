@@ -177,8 +177,35 @@ sysq() {
 # dev — sandbox (DEV-ONLY): osobny lazarusd :9596 + osobny config ~/.config/goose-sandbox
 alias dev='GOOSE_PROVIDER=deepseek-v4-sandbox GOOSE_MODEL=deepseek-v4-pro GOOSE_CONFIG_DIR=$HOME/.config/goose-sandbox LAZARUS_SUPERWING=dev LAZARUS_WING=default GOOSE_CLI_MIN_PRIORITY=0.9 lazarus-agent goose session --name dev --with-builtin developer'
 
-# eho — fallback: goły goose z sandbox providerem, bez Lazarusa (gdy lazarusd padnie)
-alias eho='GOOSE_CONFIG_DIR=$HOME/.config/goose-eho goose session --name eho --with-builtin developer'
+# eho — pełna ścieżka jak sysq, ale provider deepseek-v4-proxy (deepseek-v4-pro)
+eho() {
+    local port=$(cat ~/.cache/lazarus/mcp_port 2>/dev/null | tr -d '\n')
+    port="${port:-9595}"
+    sed -i "s|uri: http://localhost:[0-9]\+/mcp|uri: http://localhost:${port}/mcp|" ~/.config/goose/config.yaml
+
+    # ══ PEAK/OFF-PEAK ALERT ══
+    local now_utc_min now_hh now_mm peak=""
+    now_utc_min=$(( $(date -u +%H) * 60 + $(date -u +%M) ))
+    now_hh=$(date -u +%H); now_mm=$(date -u +%M)
+    if (( (now_utc_min >= 60 && now_utc_min < 240) || (now_utc_min >= 360 && now_utc_min < 600) )); then
+        peak=1
+    fi
+    if [[ -n "$peak" ]]; then
+        echo -e "\e[31;1m⚠ PEAK $now_hh:$now_mm UTC — DeepSeek taryfa szczytowa (01-04 / 06-10 UTC)\e[0m"
+        echo -en "\a"
+    else
+        echo -e "\e[32;1m✓ OFF-PEAK — $now_hh:$now_mm UTC, taryfa normalna\e[0m"
+    fi
+
+    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro lazarus-agent goose session --name eho --with-builtin developer
+}
+
+# eho1 — awaryjny: cienki wrapper (lazarus-session, sam auto-handoff) + v4-pro.
+# Działa gdy lazarusd/lazarus-agent padnie — nie wymaga pidfd ani MCP bridge.
+alias eho1='GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro ~/bin/lazarus-session'
+
+# gs — czysty goose (cienki wrapper auto-handoff, domyślny active_provider z config.yaml)
+alias gs='~/bin/lazarus-session'
 
 # yazi
 y() {
