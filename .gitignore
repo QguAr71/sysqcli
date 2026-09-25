@@ -7,3 +7,5 @@
 # Cache
 *.zwc
 *.zwc.old
+__pycache__/
+*.pyc
