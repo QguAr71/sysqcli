@@ -171,11 +171,11 @@ sysq() {
         echo -e "\e[32;1m✓ OFF-PEAK — $now_hh:$now_mm UTC, taryfa normalna\e[0m"
     fi
 
-    lazarus-agent goose session --name sysq --with-builtin developer
+    lazarus-agent goose session --name sysq --with-builtin developer,autovisualiser,computercontroller,memory
 }
 
 # dev — sandbox (DEV-ONLY): osobny lazarusd :9596 + osobny config ~/.config/goose-sandbox
-alias dev='GOOSE_PROVIDER=deepseek-v4-sandbox GOOSE_MODEL=deepseek-v4-pro GOOSE_CONFIG_DIR=$HOME/.config/goose-sandbox LAZARUS_SUPERWING=dev LAZARUS_WING=default GOOSE_CLI_MIN_PRIORITY=0.9 lazarus-agent goose session --name dev --with-builtin developer'
+alias dev='GOOSE_PROVIDER=deepseek-v4-sandbox GOOSE_MODEL=deepseek-v4-pro GOOSE_CONFIG_DIR=$HOME/.config/goose-sandbox LAZARUS_SUPERWING=dev LAZARUS_WING=default GOOSE_CLI_MIN_PRIORITY=0.9 lazarus-agent goose session --name dev --with-builtin developer,autovisualiser,computercontroller,memory'
 
 # eho — pełna ścieżka jak sysq, ale provider deepseek-v4-proxy (deepseek-v4-pro)
 eho() {
@@ -197,7 +197,7 @@ eho() {
         echo -e "\e[32;1m✓ OFF-PEAK — $now_hh:$now_mm UTC, taryfa normalna\e[0m"
     fi
 
-    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro lazarus-agent goose session --name eho --with-builtin developer
+    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro lazarus-agent goose session --name eho --with-builtin developer,autovisualiser,computercontroller,memory
 }
 
 # eho1 — awaryjny: cienki wrapper (lazarus-session, sam auto-handoff) + v4-pro.
