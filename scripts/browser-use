@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Wrapper dla browser-use: pilnuje, żeby dedykowany Chromium automatyzacyjny
+# żył z portem remote-debugging, a potem przekazuje sterowanie do prawdziwego
+# browser-use (uv tool) z BU_CDP_URL ustawionym jawnie.
+#
+# Dzięki temu browser-use działa stabilnie na Chromium (systemowym),
+# niezależnie od tego, że twoją codzienną przeglądarką jest Brave Origin.
+
+set -u
+
+CHROMIUM_BIN="${CHROMIUM_BIN:-/usr/bin/chromium}"
+DEBUG_PORT="${CHROMIUM_DEBUG_PORT:-9222}"
+PROFILE_DIR="${CHROMIUM_AUTOMATION_PROFILE:-$HOME/.config/chromium-automation}"
+LOG_FILE="${CHROMIUM_AUTOMATION_LOG:-$HOME/.cache/chromium-automation.log}"
+REAL_BU="${REAL_BROWSER_USE:-/home/sysq/.local/share/uv/tools/browser-use/bin/browser-use}"
+
+# 0) Zignoruj ten plik dla poleceń podrzędnych, które nie są sesją CDP.
+#    Wszystko co nie wygląda na kod Pythona (heredoc/script) przepuszczamy dalej.
+case "${1:-}" in
+  --version|--help|doctor|--doctor|auth|recordings|video|telemetry)
+    exec "$REAL_BU" "$@"
+    ;;
+esac
+
+mkdir -p "$(dirname "$LOG_FILE")"
+
+# 1) Czy dedykowany Chromium już nasłuchuje na porcie?
+if curl -sf "http://127.0.0.1:${DEBUG_PORT}/json/version" >/dev/null 2>&1; then
+  : # już działa
+else
+  # 2) Podnieś Chromium w tle (subshell + setsid, żeby przeżył shell).
+  #    Dedykowany profil = nie koliduje z twoim codziennym użyciem Brave/Chromium.
+  (
+    setsid "$CHROMIUM_BIN" \
+      --remote-debugging-port="$DEBUG_PORT" \
+      --user-data-dir="$PROFILE_DIR" \
+      --no-first-run \
+      --no-default-browser-check \
+      --disable-features=Translate \
+      about:blank \
+      >"$LOG_FILE" 2>&1 < /dev/null &
+  )
+  # Czekaj na gotowość CDP (max 10s)
+  for _ in $(seq 1 50); do
+    if curl -sf "http://127.0.0.1:${DEBUG_PORT}/json/version" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.2
+  done
+fi
+
+# 3) Przekaż endpoint i puść prawdziwy browser-use.
+export BU_CDP_URL="http://127.0.0.1:${DEBUG_PORT}"
+
+exec "$REAL_BU" "$@"

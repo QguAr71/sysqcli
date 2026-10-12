@@ -9,3 +9,7 @@
 *.zwc.old
 __pycache__/
 *.pyc
+
+# Backupy (artefakty edycji)
+*.bak
+*.bak-*
