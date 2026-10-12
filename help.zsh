@@ -14,6 +14,8 @@ sysqcli() {
     echo -e "  \e[1;32mdev\e[0m            - Sandbox: osobny lazarusd + dev SuperWing"
     echo -e "  \e[1;32meho1\e[0m           - Awaryjny: cienki lazarus-session + v4-pro"
     echo -e "  \e[1;32mgs\e[0m             - Czysty goose (cienki wrapper, domyślny provider)"
+    echo -e "  \e[1;32mgoose-hr\e[0m       - Goose + Headroom (kompresja tokenów przed :9998)"
+    echo -e "  \e[1;32mgoose-free\e[0m     - Goose + OmniRoute (darmowe tokeny, gateway :20128)"
     echo -e "\e[1;34m AI & DIAGNOSTYKA:\e[0m"
     echo -e "  \e[1;32msc/si\e[0m          - Asystent AI (mechanik / mini)"
     echo -e "  \e[1;32mfix\e[0m            - AI analizuje błędy z journalctl i naprawia"

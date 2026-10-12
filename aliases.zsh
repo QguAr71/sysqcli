@@ -207,6 +207,80 @@ alias eho1='GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro ~/bin/l
 # gs — czysty goose (cienki wrapper auto-handoff, domyślny active_provider z config.yaml)
 alias gs='~/bin/lazarus-session'
 
+# ═══════════════════════════════════════════════════════════════
+# HEADROOM — kompresja tokenów (lokalny proxy przed lazarus-network)
+# Ścieżka: goose → headroom (:8787/v1) → lazarus-network (:9998/v1) → DeepSeek
+# ═══════════════════════════════════════════════════════════════
+goose-hr() {
+    local hr_port="${HEADROOM_PORT:-8787}"
+    local upstream="http://127.0.0.1:9998/v1"
+
+    # 1) Upewnij się, że lazarus-network żyje (bo Headroom do niego forwarduje).
+    if ! curl -sf "http://127.0.0.1:9998/health" >/dev/null 2>&1; then
+        echo -e "\e[31;1m⚠ lazarus-network (9998) nie działa — uruchom najpierw Lazarus.\e[0m"
+        return 1
+    fi
+
+    # 2) Upewnij się, że Headroom proxy działa; jak nie — podnieś go w tle.
+    if ! curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1; then
+        mkdir -p ~/.cache/headroom
+        ( HEADROOM_BEACON=off DO_NOT_TRACK=1 setsid headroom proxy --port "$hr_port" \
+            --openai-api-url "$upstream" \
+            >~/.cache/headroom/proxy.log 2>&1 & )
+        # czekaj na gotowość (max 8s)
+        for _ in {1..40}; do
+            curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1 && break
+            sleep 0.2
+        done
+        if ! curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1; then
+            echo -e "\e[31;1m⚠ Headroom proxy nie wystartował — log: ~/.cache/headroom/proxy.log\e[0m"
+            return 1
+        fi
+        echo -e "\e[32;1m✓ Headroom proxy na :${hr_port} (kompresja przed :9998)\e[0m"
+    fi
+
+    # 3) Uruchom goose przez Headroom (tymczasowy provider openai → headroom).
+    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro \
+      OPENAI_BASE_URL="http://127.0.0.1:${hr_port}/v1" \
+      OPENAI_TARGET_API_URL="$upstream" \
+      lazarus-agent goose session --name sysq-hr --with-builtin developer,autovisualiser,computercontroller,memory
+}
+
+# ═══════════════════════════════════════════════════════════════
+# OMNIROUTE — darmowe tokeny (osobny gateway :20128, niezależny od Lazarus)
+# ═══════════════════════════════════════════════════════════════
+goose-free() {
+    local omni_bin="$HOME/.local/share/omniroute/node_modules/omniroute/bin/omniroute.mjs"
+    local omni_port="${OMNIROUTE_PORT:-20128}"
+
+    if [[ ! -f "$omni_bin" ]]; then
+        echo -e "\e[31;1m⚠ OmniRoute nie zainstalowany (brak: $omni_bin)\e[0m"
+        return 1
+    fi
+
+    # 1) Upewnij się, że OmniRoute gateway działa.
+    if ! curl -sf "http://localhost:${omni_port}/v1/models" >/dev/null 2>&1; then
+        echo -e "\e[33;1m⏳ Startuję OmniRoute gateway (port ${omni_port})…\e[0m"
+        ( OMNIROUTE_SERVER_HOST=127.0.0.1 setsid node "$omni_bin" serve --port "$omni_port" --no-open --daemon \
+            >~/.cache/omniroute.log 2>&1 & )
+        for _ in {1..40}; do
+            curl -sf "http://localhost:${omni_port}/v1/models" >/dev/null 2>&1 && break
+            sleep 0.5
+        done
+        if ! curl -sf "http://localhost:${omni_port}/v1/models" >/dev/null 2>&1; then
+            echo -e "\e[31;1m⚠ OmniRoute nie wystartował — log: ~/.cache/omniroute.log\e[0m"
+            return 1
+        fi
+        echo -e "\e[32;1m✓ OmniRoute gateway na :${omni_port}\e[0m"
+    fi
+
+    # 2) Uruchom goose przez OmniRoute (OpenAI-compatible endpoint).
+    OPENAI_BASE_URL="http://localhost:${omni_port}/v1" \
+      OPENAI_API_KEY="omniroute-free" \
+      GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=auto \
+      lazarus-agent goose session --name sysq-free --with-builtin developer,autovisualiser,computercontroller,memory
+}
+
 # yazi
 y() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
