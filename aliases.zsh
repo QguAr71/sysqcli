@@ -208,8 +208,12 @@ alias eho1='GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro ~/bin/l
 alias gs='~/bin/lazarus-session'
 
 # ═══════════════════════════════════════════════════════════════
-# HEADROOM — kompresja tokenów (lokalny proxy przed lazarus-network)
+# HEADROOM — prefix-cache + kompresja tool results (lokalny proxy przed lazarus-network)
 # Ścieżka: goose → headroom (:8787/v1) → lazarus-network (:9998/v1) → DeepSeek
+# Headroom daje tu: (1) prefix-cache DeepSeek (realna oszczędność kosztowa, cache_hit),
+# (2) kompresję tool results (Bash/Read/Grep). Czysty chat/completions NIE jest
+# lossy-kompresowany — to znane ograniczenie headroom (router chroni user msgs +
+# zamraża historię). Tryb domyślny `cache` (freeze prior turns) jest optymalny.
 # ═══════════════════════════════════════════════════════════════
 goose-hr() {
     local hr_port="${HEADROOM_PORT:-8787}"
@@ -224,7 +228,10 @@ goose-hr() {
     # 2) Upewnij się, że Headroom proxy działa; jak nie — podnieś go w tle.
     if ! curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1; then
         mkdir -p ~/.cache/headroom
-        ( HEADROOM_BEACON=off DO_NOT_TRACK=1 setsid headroom proxy --port "$hr_port" \
+        # HEADROOM_COMPRESS_USER_MESSAGES=1 — intencja lossy kompresji prior user
+        # turns (env, nie flaga CLI). Domyślny --mode cache = prefix-cache.
+        ( HEADROOM_BEACON=off DO_NOT_TRACK=1 HEADROOM_COMPRESS_USER_MESSAGES=1 \
+            setsid headroom proxy --port "$hr_port" \
             --openai-api-url "$upstream" \
             >~/.cache/headroom/proxy.log 2>&1 & )
         # czekaj na gotowość (max 8s)
@@ -236,7 +243,7 @@ goose-hr() {
             echo -e "\e[31;1m⚠ Headroom proxy nie wystartował — log: ~/.cache/headroom/proxy.log\e[0m"
             return 1
         fi
-        echo -e "\e[32;1m✓ Headroom proxy na :${hr_port} (kompresja przed :9998)\e[0m"
+        echo -e "\e[32;1m✓ Headroom proxy na :${hr_port} (prefix-cache + kompresja tool results)\e[0m"
     fi
 
     # 3) Uruchom goose przez Headroom (tymczasowy provider openai → headroom).
