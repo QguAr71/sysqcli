@@ -204,6 +204,10 @@ eho() {
 # Działa gdy lazarusd/lazarus-agent padnie — nie wymaga pidfd ani MCP bridge.
 alias eho1='GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro ~/bin/lazarus-session'
 
+# gpt — provider vision (gpt-5.4, OpenAI). Test warstwy LLM Scheduler (task 7f7a72fafd0817b8).
+# Klucz: OPENAI_API_KEY w ~/.bashrc. Używaj do zadań z obrazkami (efekt blasku itp.).
+alias gpt='GOOSE_PROVIDER=gpt GOOSE_MODEL=gpt-5.4 lazarus-agent goose session --name gpt --with-builtin developer,autovisualiser,computercontroller,memory'
+
 # gs — czysty goose (cienki wrapper auto-handoff, domyślny active_provider z config.yaml)
 alias gs='~/bin/lazarus-session'
 
