@@ -148,6 +148,54 @@ fedit() {
 # goose = fallback: goły goose, działa zawsze gdy lazarusd padnie
 # ═══════════════════════════════════════════════════════════════
 
+# ═══════════════════════════════════════════════════════════════
+# ZERO-TRACE FAZA 3 — Context Gate: headroom lossless jako DOMYŚLNA ścieżka
+#
+# goose_via_headroom <name> [extra env] — uruchamia goose przez Headroom
+# (:8787) → lazarus-network (:9998), w trybie:
+#   --mode cache        = freeze prior turns (prefix-cache DeepSeek)
+#   --lossless          = format-native lossless (bez markerów CCR/retrieve)
+#   --protect-tool-results Bash,Read = nigdy nie kompresuj tych tool results
+# Fallback (I-18): gdy headroom nie wstaje → goły goose prosto na :9998.
+# NIGDY nie blokuje startu — headroom to optymalizacja, nie wymóg.
+# ═══════════════════════════════════════════════════════════════
+goose_via_headroom() {
+    local name="$1"; shift
+    local hr_port="${HEADROOM_PORT:-8787}"
+    local upstream="http://127.0.0.1:9998/v1"
+
+    # 1) Headroom ma sens tylko gdy lazarus-network (:9998) żyje.
+    if ! curl -sf "http://127.0.0.1:9998/health" >/dev/null 2>&1; then
+        echo -e "\e[33;1m⚠ lazarus-network (9998) nie działa — fallback na goły goose.\e[0m"
+        lazarus-agent goose session --name "$name" --with-builtin developer,autovisualiser,computercontroller,memory "$@"
+        return $?
+    fi
+
+    # 2) Podnieś Headroom jeśli nie żyje (lossless + protect-tool-results).
+    if ! curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1; then
+        mkdir -p ~/.cache/headroom
+        ( HEADROOM_BEACON=off DO_NOT_TRACK=1 \
+            setsid headroom proxy --port "$hr_port" \
+            --mode cache --lossless --protect-tool-results Bash,Read \
+            --openai-api-url "$upstream" \
+            >~/.cache/headroom/proxy.log 2>&1 & )
+        for _ in {1..40}; do
+            curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1 && break
+            sleep 0.2
+        done
+    fi
+
+    # 3) Headroom wstał → goose przez headroom; inaczej fallback na goły goose (I-18).
+    if curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1; then
+        OPENAI_BASE_URL="http://127.0.0.1:${hr_port}/v1" \
+        OPENAI_TARGET_API_URL="$upstream" \
+        lazarus-agent goose session --name "$name" --with-builtin developer,autovisualiser,computercontroller,memory "$@"
+    else
+        echo -e "\e[33;1m⚠ Headroom proxy nie wystartował — fallback na goły goose (:9998). log: ~/.cache/headroom/proxy.log\e[0m"
+        lazarus-agent goose session --name "$name" --with-builtin developer,autovisualiser,computercontroller,memory "$@"
+    fi
+}
+
 # sysq — pełna ścieżka (lazarus-agent + pidfd lifecycle + MCP)
 # Automatycznie aktualizuje port MCP w goose config przed startem.
 sysq() {
@@ -171,7 +219,7 @@ sysq() {
         echo -e "\e[32;1m✓ OFF-PEAK — $now_hh:$now_mm UTC, taryfa normalna\e[0m"
     fi
 
-    lazarus-agent goose session --name sysq --with-builtin developer,autovisualiser,computercontroller,memory
+    goose_via_headroom "sysq"
 }
 
 # dev — sandbox (DEV-ONLY): osobny lazarusd :9596 + osobny config ~/.config/goose-sandbox
@@ -197,7 +245,7 @@ eho() {
         echo -e "\e[32;1m✓ OFF-PEAK — $now_hh:$now_mm UTC, taryfa normalna\e[0m"
     fi
 
-    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro lazarus-agent goose session --name eho --with-builtin developer,autovisualiser,computercontroller,memory
+    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro goose_via_headroom "eho"
 }
 
 # eho1 — awaryjny: cienki wrapper (lazarus-session, sam auto-handoff) + v4-pro.
@@ -219,49 +267,17 @@ gpt() {
 alias gs='~/bin/lazarus-session'
 
 # ═══════════════════════════════════════════════════════════════
-# HEADROOM — prefix-cache + kompresja tool results (lokalny proxy przed lazarus-network)
+# HEADROOM — prefix-cache + lossless kompresja tool results (proxy przed lazarus-network)
 # Ścieżka: goose → headroom (:8787/v1) → lazarus-network (:9998/v1) → DeepSeek
-# Headroom daje tu: (1) prefix-cache DeepSeek (realna oszczędność kosztowa, cache_hit),
-# (2) kompresję tool results (Bash/Read/Grep). Czysty chat/completions NIE jest
-# lossy-kompresowany — to znane ograniczenie headroom (router chroni user msgs +
-# zamraża historię). Tryb domyślny `cache` (freeze prior turns) jest optymalny.
+# Tryb (ZERO-TRACE Faza 3): --mode cache (freeze prior turns, prefix-cache) +
+# --lossless (format-native, bez markerów CCR/retrieve) +
+# --protect-tool-results Bash,Read (nigdy nie kompresuj tych tool results).
+# Fallback I-18: headroom nie wstaje → goły goose :9998. NIGDY nie blokuje startu.
 # ═══════════════════════════════════════════════════════════════
 goose-hr() {
-    local hr_port="${HEADROOM_PORT:-8787}"
-    local upstream="http://127.0.0.1:9998/v1"
-
-    # 1) Upewnij się, że lazarus-network żyje (bo Headroom do niego forwarduje).
-    if ! curl -sf "http://127.0.0.1:9998/health" >/dev/null 2>&1; then
-        echo -e "\e[31;1m⚠ lazarus-network (9998) nie działa — uruchom najpierw Lazarus.\e[0m"
-        return 1
-    fi
-
-    # 2) Upewnij się, że Headroom proxy działa; jak nie — podnieś go w tle.
-    if ! curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1; then
-        mkdir -p ~/.cache/headroom
-        # HEADROOM_COMPRESS_USER_MESSAGES=1 — intencja lossy kompresji prior user
-        # turns (env, nie flaga CLI). Domyślny --mode cache = prefix-cache.
-        ( HEADROOM_BEACON=off DO_NOT_TRACK=1 HEADROOM_COMPRESS_USER_MESSAGES=1 \
-            setsid headroom proxy --port "$hr_port" \
-            --openai-api-url "$upstream" \
-            >~/.cache/headroom/proxy.log 2>&1 & )
-        # czekaj na gotowość (max 8s)
-        for _ in {1..40}; do
-            curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1 && break
-            sleep 0.2
-        done
-        if ! curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1; then
-            echo -e "\e[31;1m⚠ Headroom proxy nie wystartował — log: ~/.cache/headroom/proxy.log\e[0m"
-            return 1
-        fi
-        echo -e "\e[32;1m✓ Headroom proxy na :${hr_port} (prefix-cache + kompresja tool results)\e[0m"
-    fi
-
-    # 3) Uruchom goose przez Headroom (tymczasowy provider openai → headroom).
-    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro \
-      OPENAI_BASE_URL="http://127.0.0.1:${hr_port}/v1" \
-      OPENAI_TARGET_API_URL="$upstream" \
-      lazarus-agent goose session --name sysq-hr --with-builtin developer,autovisualiser,computercontroller,memory
+    # ZERO-TRACE Faza 3: goose-hr = jawne wywołanie headroom lossless (już
+    # domyślne dla sysq/eho). Zachowanie providera jak dotąd (v4-proxy).
+    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro goose_via_headroom "sysq-hr"
 }
 
 # ═══════════════════════════════════════════════════════════════
