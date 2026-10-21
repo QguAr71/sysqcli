@@ -161,13 +161,15 @@ fedit() {
 # ═══════════════════════════════════════════════════════════════
 goose_via_headroom() {
     local name="$1"; shift
+    local provider="$1"; shift          # np. deepseek-flash (bez -hr)
+    local model="$1"; shift             # np. deepseek-flash (jawne, bypass match buga)
     local hr_port="${HEADROOM_PORT:-8787}"
     local upstream="http://127.0.0.1:9998/v1"
 
     # 1) Headroom ma sens tylko gdy lazarus-network (:9998) żyje.
     if ! curl -sf "http://127.0.0.1:9998/health" >/dev/null 2>&1; then
-        echo -e "\e[33;1m⚠ lazarus-network (9998) nie działa — fallback na goły goose.\e[0m"
-        lazarus-agent goose session --name "$name" --with-builtin developer,autovisualiser,computercontroller,memory "$@"
+        echo -e "\e[33;1m⚠ lazarus-network (9998) nie działa — HR: OFF, goły goose.\e[0m"
+        GOOSE_PROVIDER="$provider" GOOSE_MODEL="$model" lazarus-agent goose session --name "$name" --with-builtin developer,autovisualiser,computercontroller,memory "$@"
         return $?
     fi
 
@@ -185,14 +187,13 @@ goose_via_headroom() {
         done
     fi
 
-    # 3) Headroom wstał → goose przez headroom; inaczej fallback na goły goose (I-18).
-    if curl -sf "http://127.0.0.1:${hr_port}/health" >/dev/null 2>&1; then
-        OPENAI_BASE_URL="http://127.0.0.1:${hr_port}/v1" \
-        OPENAI_TARGET_API_URL="$upstream" \
-        lazarus-agent goose session --name "$name" --with-builtin developer,autovisualiser,computercontroller,memory "$@"
+    # 3) Headroom wstał → provider "-hr" (base_url=:8787); inaczej goły (I-18).
+    if curl -sf "http://127.0.0.1:8787/health" >/dev/null 2>&1; then
+        echo -e "\e[32;1m✓ HR: ON — goose przez headroom lossless (:8787 → :9998)\e[0m"
+        GOOSE_PROVIDER="${provider}-hr" GOOSE_MODEL="$model" lazarus-agent goose session --name "$name" --with-builtin developer,autovisualiser,computercontroller,memory "$@"
     else
-        echo -e "\e[33;1m⚠ Headroom proxy nie wystartował — fallback na goły goose (:9998). log: ~/.cache/headroom/proxy.log\e[0m"
-        lazarus-agent goose session --name "$name" --with-builtin developer,autovisualiser,computercontroller,memory "$@"
+        echo -e "\e[33;1m⚠ HR: OFF — headroom nie wstał, fallback na goły goose (:9998). log: ~/.cache/headroom/proxy.log\e[0m"
+        GOOSE_PROVIDER="$provider" GOOSE_MODEL="$model" lazarus-agent goose session --name "$name" --with-builtin developer,autovisualiser,computercontroller,memory "$@"
     fi
 }
 
@@ -219,7 +220,7 @@ sysq() {
         echo -e "\e[32;1m✓ OFF-PEAK — $now_hh:$now_mm UTC, taryfa normalna\e[0m"
     fi
 
-    goose_via_headroom "sysq"
+    goose_via_headroom "sysq" "deepseek-flash" "deepseek-flash"
 }
 
 # dev — sandbox (DEV-ONLY): osobny lazarusd :9596 + osobny config ~/.config/goose-sandbox
@@ -245,7 +246,7 @@ eho() {
         echo -e "\e[32;1m✓ OFF-PEAK — $now_hh:$now_mm UTC, taryfa normalna\e[0m"
     fi
 
-    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro goose_via_headroom "eho"
+    goose_via_headroom "eho" "deepseek-v4-proxy" "deepseek-v4-pro"
 }
 
 # eho1 — awaryjny: cienki wrapper (lazarus-session, sam auto-handoff) + v4-pro.
@@ -277,7 +278,7 @@ alias gs='~/bin/lazarus-session'
 goose-hr() {
     # ZERO-TRACE Faza 3: goose-hr = jawne wywołanie headroom lossless (już
     # domyślne dla sysq/eho). Zachowanie providera jak dotąd (v4-proxy).
-    GOOSE_PROVIDER=deepseek-v4-proxy GOOSE_MODEL=deepseek-v4-pro goose_via_headroom "sysq-hr"
+    goose_via_headroom "sysq-hr" "deepseek-v4-proxy" "deepseek-v4-pro"
 }
 
 # ═══════════════════════════════════════════════════════════════
